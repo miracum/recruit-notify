@@ -1,0 +1,41 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:92dc3de0-05c6-473e-a38a-1918c874a420",
+      "resource": {
+        "resourceType": "List",
+        "extension": [
+          {
+            "url": "http://miracum.org/fhir/screening-list-study-reference",
+            "valueReference": {
+              "reference": "ResearchStudy/25"
+            }
+          }
+        ],
+        "identifier": [
+          {
+            "system": "http://miracum.org/fhir/screening-list-cohort-identifier",
+            "value": "1"
+          }
+        ],
+        "mode": "working",
+        "code": {
+          "coding": [
+            {
+              "system": "http://miracum.org/fhir/CodeSystem/screening-list",
+              "code": "screening-recommendations"
+            }
+          ]
+        },
+        "entry": []
+      },
+      "request": {
+        "method": "POST",
+        "url": "List",
+        "ifNoneExist": "identifier=http://miracum.org/fhir/screening-list-cohort-identifier|1"
+      }
+    }
+  ]
+}
