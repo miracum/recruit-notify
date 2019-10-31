@@ -3,12 +3,48 @@
   "type": "transaction",
   "entry": [
     {
+      "fullUrl": "Patient/0",
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "system": "http://ohdsi.org/omop/fhir/subject-identifier",
+            "value": "1"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Jones311",
+            "given": ["Bruce167"],
+            "prefix": ["Mr."]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1917-04-25"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient",
+        "ifNoneExist": "identifier=http://ohdsi.org/omop/fhir/subject-identifier|1"
+      }
+    },
+    {
       "resource": {
         "resourceType": "List",
         "identifier": [
           {
             "system": "http://miracum.org/fhir/screening-list-cohort-identifier",
             "value": "1"
+          }
+        ],
+        "extension": [
+          {
+            "url": "http://miracum.org/fhir/screening-list-study-reference",
+            "valueReference": {
+              "reference": "ResearchStudy/0",
+              "display": "PROSa"
+            }
           }
         ],
         "mode": "working",
@@ -20,39 +56,137 @@
             }
           ]
         },
-        "entry": []
+        "entry": [
+          {
+            "item": {
+              "reference": "Patient/0"
+            }
+          },
+          {
+            "item": {
+              "reference": "Patient/0"
+            }
+          }
+        ]
       },
       "request": {
-        "method": "POST",
-        "url": "List",
-        "ifNoneExist": "identifier=http://miracum.org/fhir/screening-list-cohort-identifier|1"
+        "method": "PUT",
+        "url": "List?identifier=http%3A%2F%2miracum.org%2Ffhir%2Fscreening-list-cohort-identifier|1"
       }
     },
     {
-        "resource": {
-          "resourceType": "List",
-          "identifier": [
-            {
-              "system": "http://miracum.org/fhir/screening-list-cohort-identifier",
-              "value": "2"
+      "resource": {
+        "resourceType": "List",
+        "identifier": [
+          {
+            "system": "http://miracum.org/fhir/screening-list-cohort-identifier",
+            "value": "2"
+          }
+        ],
+        "extension": [
+          {
+            "url": "http://miracum.org/fhir/screening-list-study-reference",
+            "valueReference": {
+              "reference": "ResearchStudy/1",
+              "display": "AMICA"
             }
-          ],
-          "mode": "working",
-          "code": {
-            "coding": [
-              {
-                "system": "http://miracum.org/fhir/CodeSystem/screening-list",
-                "code": "screening-recommendations"
-              }
-            ]
-          },
-          "entry": []
+          }
+        ],
+        "mode": "working",
+        "code": {
+          "coding": [
+            {
+              "system": "http://miracum.org/fhir/CodeSystem/screening-list",
+              "code": "screening-recommendations"
+            }
+          ]
         },
-        "request": {
-          "method": "POST",
-          "url": "List",
-          "ifNoneExist": "identifier=http://miracum.org/fhir/screening-list-cohort-identifier|2"
-        }
+        "entry": [
+          {
+            "item": {
+              "reference": "Patient/0"
+            }
+          },
+          {
+            "item": {
+              "reference": "Patient/0"
+            }
+          },
+          {
+            "item": {
+              "reference": "Patient/0"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "List?identifier=http%3A%2F%2miracum.org%2Ffhir%2Fscreening-list-cohort-identifier|2"
       }
+    },
+    {
+      "fullUrl": "ResearchStudy/0",
+      "resource": {
+        "resourceType": "ResearchStudy",
+        "identifier": [
+          {
+            "use": "official",
+            "system": "http://clinicaltrials.gov/",
+            "value": "NCT03521531"
+          },
+          {
+            "use": "official",
+            "system": "http://miracum.org/fhir/study-acronym ",
+            "value": "PROSa"
+          }
+        ],
+        "title": "Burden and Medical Care of Sarcoma in Germany (PROSa)",
+        "description": "Krankheitslast und Versorgungssituation bei Sarkomen [...]",
+        "status": "active",
+        "relatedArtifact": [
+          {
+            "type": "documentation",
+            "url": "https://clinicaltrials.gov/ct2/show/NCT03521531"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "ResearchStudy",
+        "ifNoneExist": "identifier=http://clinicaltrials.gov/|NCT03521531"
+      }
+    },
+    {
+      "fullUrl": "ResearchStudy/1",
+      "resource": {
+        "resourceType": "ResearchStudy",
+        "identifier": [
+          {
+            "use": "official",
+            "system": "http://clinicaltrials.gov/",
+            "value": "NCT03555877"
+          },
+          {
+            "use": "official",
+            "system": "http://miracum.org/fhir/study-acronym ",
+            "value": "AMICA"
+          }
+        ],
+        "title": "Antihormonelle Erhaltungstherapie [...]",
+        "description": "This is a multicenter, prospective, randomized,",
+        "status": "active",
+        "relatedArtifact": [
+          {
+            "type": "documentation",
+            "url": "https://clinicaltrials.gov/ct2/show/NCT03555877"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "ResearchStudy",
+        "ifNoneExist": "identifier=http://clinicaltrials.gov/|NCT03555877"
+      }
+    }
   ]
 }
