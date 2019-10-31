@@ -136,7 +136,7 @@
           },
           {
             "use": "official",
-            "system": "http://miracum.org/fhir/study-acronym ",
+            "system": "http://miracum.org/fhir/study-acronym",
             "value": "PROSa"
           }
         ],
@@ -168,7 +168,7 @@
           },
           {
             "use": "official",
-            "system": "http://miracum.org/fhir/study-acronym ",
+            "system": "http://miracum.org/fhir/study-acronym",
             "value": "AMICA"
           }
         ],
