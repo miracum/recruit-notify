@@ -2,29 +2,25 @@ version: "3.7"
 
 services:
   fhir:
-    image: docker.miracum.org/miracum-data/hapi-fhir-jpaserver:v3.0.0
-    restart: always
+    image: docker.miracum.org/miracum-data/hapi-fhir-jpaserver:v5.0.0
     ports:
-      - "8083:8080"
+      - "8082:8080"
     environment:
-      FHIR_VERSION: R4
-      SERVER_URL: http://fhir:8080/fhir
-      POSTGRES_HOST: fhir-db
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: fhir
-    depends_on:
-      - fhir-db
+      server_address: "http://localhost:8082/fhir"
+      subscription.resthook.enabled: "true"
+      subscription.websocket.enabled: "false"
 
-  fhir-db:
-    image: postgres:12.0-alpine
-    restart: always
+  greenmail:
+    image: greenmail/standalone:1.5.11
+    ports:
+      - "3025:3025"
+      - "3110:3110"
+      - "3143:3143"
+      - "3465:3465"
+      - "3993:3993"
+      - "3995:3995"
     environment:
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: fhir
-    tmpfs:
-      - /var/lib/postgresql/data:rw
+      GREENMAIL_OPTS: '-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose'
 
   loader:
     image: byrnedo/alpine-curl:0.1.7
