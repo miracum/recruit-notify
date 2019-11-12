@@ -1,0 +1,39 @@
+plugins {
+	id 'org.springframework.boot' version '2.2.1.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+	id 'java'
+}
+
+group = 'org.miracum.recruit'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+	developmentOnly
+	runtimeClasspath {
+		extendsFrom developmentOnly
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter'
+	compile 'org.springframework.boot:spring-boot-starter-web'
+	compile 'org.springframework.boot:spring-boot-starter-mail:2.2.1.RELEASE'
+	compile "org.yaml:snakeyaml:1.25"
+	compile 'ca.uhn.hapi.fhir:org.hl7.fhir.r4:4.0.3'
+	compile 'ca.uhn.hapi.fhir:hapi-fhir-base:4.0.3'
+	compile 'ca.uhn.hapi.fhir:hapi-fhir-client:4.0.3'
+	compile 'ca.uhn.hapi.fhir:hapi-fhir-structures-r4:4.0.3'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	testImplementation('org.springframework.boot:spring-boot-starter-test') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+}
+
+test {
+	useJUnitPlatform()
+}

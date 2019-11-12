@@ -1,0 +1,10 @@
+mail:
+  - acronym: "PROSa"
+    from: "hello@example.com"
+    to:
+      - "a@example.com"
+      - "b@example.com"
+  - acronym: "AMICA"
+    from: "world@example.com"
+    to:
+      - "c@example.com"

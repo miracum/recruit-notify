@@ -1,0 +1,23 @@
+fhir:
+  url: "http://localhost:8082/fhir"
+  subscription:
+    criteria: "List?code=http://miracum.org/fhir/CodeSystem/screening-list|screening-recommendations"
+  systems:
+    screeninglistreference: "http://miracum.org/fhir/screening-list-study-reference"
+    studyacronym: "http://miracum.org/fhir/study-acronym"
+
+webhook:
+  endpoint: "http://localhost:8080/on-list-change"
+
+spring:
+  mail:
+    host: localhost
+    port: 3025
+    username: user
+    password: pass
+    properties:
+      mail:
+        debug: true
+
+notificationrules:
+  path: "./notifications.yml"
