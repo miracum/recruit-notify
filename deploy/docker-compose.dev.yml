@@ -20,10 +20,10 @@ services:
       - "3993:3993"
       - "3995:3995"
     environment:
-      GREENMAIL_OPTS: '-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose'
+      GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose"
 
   loader:
-    image: byrnedo/alpine-curl:0.1.7
+    image: byrnedo/alpine-curl:0.1.8
     command: -X POST
       -H "Content-Type:application/json"
       --retry-connrefuse
