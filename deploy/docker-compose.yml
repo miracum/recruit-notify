@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   notify:
-    image: notify #docker.miracum.org/uc1-recruit/notify:$IMAGE_TAG
+    image: docker.miracum.org/uc1-recruit/notify:$IMAGE_TAG
     environment:
       fhir.url: $FHIR_SERVER
       webhook.endpoint: $WEBHOOK_ENDPOINT
