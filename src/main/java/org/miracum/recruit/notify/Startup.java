@@ -1,11 +1,18 @@
 package org.miracum.recruit.notify;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.api.MethodOutcome;
+import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import org.hl7.fhir.r4.model.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.listener.RetryListenerSupport;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -22,11 +29,36 @@ public class Startup {
     private String endpoint;
 
     @PostConstruct
-    private void init() {
+    private void init() throws Exception {
         log.info("Creating subscription resource with criteria {} @ {}", criteria, fhirUrl);
 
+        var retryTemplate = new RetryTemplate();
+
+        var fixedBackOffPolicy = new FixedBackOffPolicy();
+        fixedBackOffPolicy.setBackOffPeriod(10000);
+        retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
+
+        var retryPolicy = new SimpleRetryPolicy();
+        retryPolicy.setMaxAttempts(20);
+        retryTemplate.setRetryPolicy(retryPolicy);
+
+        retryTemplate.registerListener(new RetryListenerSupport() {
+            @Override
+            public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
+                log.warn("Trying to connect to FHIR server caused error. {} attempt.", context.getRetryCount(), throwable);
+            }
+        });
+
+        retryTemplate.execute((RetryCallback<MethodOutcome, FhirClientConnectionException>) retryContext -> createSubscription());
+
+        var outcome = createSubscription();
+
+        log.info("Subscription resource created: {}; id: {}", outcome.getCreated(), outcome.getId());
+    }
+
+    private MethodOutcome createSubscription() {
         var ctx = FhirContext.forR4();
-        IGenericClient client = ctx.newRestfulGenericClient(fhirUrl);
+        var client = ctx.newRestfulGenericClient(fhirUrl);
 
         var channel = new Subscription.SubscriptionChannelComponent()
                 .setType(Subscription.SubscriptionChannelType.RESTHOOK)
@@ -39,13 +71,11 @@ public class Startup {
                 .setReason("Create notifications based on screening list changes.")
                 .setStatus(Subscription.SubscriptionStatus.REQUESTED);
 
-        var outcome = client.update()
+        return client.update()
                 .resource(subscription)
                 .conditional()
                 .where(Subscription.CRITERIA.matchesExactly()
                         .value(criteria))
                 .execute();
-
-        log.info("Subscription resource created: {}; id: {}", outcome.getCreated(), outcome.getId());
     }
 }

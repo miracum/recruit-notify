@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-//@ConfigurationProperties(prefix = "rules")
 public class NotificationConfiguration {
     private static final Logger log = LoggerFactory.getLogger(NotificationConfiguration.class);
 

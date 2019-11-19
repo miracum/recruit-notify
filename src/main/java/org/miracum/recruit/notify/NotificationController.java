@@ -1,6 +1,7 @@
 package org.miracum.recruit.notify;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import org.hl7.fhir.r4.model.ListResource;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ResearchStudy;
@@ -13,7 +14,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.backoff.FixedBackOffPolicy;
+import org.springframework.retry.listener.RetryListenerSupport;
+import org.springframework.retry.policy.SimpleRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import static java.util.stream.Collectors.toList;
 
@@ -44,6 +54,28 @@ public class NotificationController {
 
         log.info("onListChange called for list with id {}", resourceId);
 
+        var retryTemplate = new RetryTemplate();
+
+        var fixedBackOffPolicy = new FixedBackOffPolicy();
+        fixedBackOffPolicy.setBackOffPeriod(10000);
+        retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
+
+        var retryPolicy = new SimpleRetryPolicy();
+        retryPolicy.setMaxAttempts(20);
+        retryTemplate.setRetryPolicy(retryPolicy);
+
+        retryTemplate.registerListener(new RetryListenerSupport() {
+            @Override
+            public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
+                log.warn("Trying to connect to FHIR server caused error. {} attempt.", context.getRetryCount(), throwable);
+            }
+        });
+
+        retryTemplate.execute(
+                (RetryCallback<Void, FhirClientConnectionException>) retryContext -> handleSubscriptionCallback(list));
+    }
+
+    private Void handleSubscriptionCallback(ListResource list) {
         // get the ResearchStudy referenced by this changed screening list
         var studyReference = (Reference) list.getExtensionByUrl(screeningListReferenceSystem).getValue();
 
@@ -63,7 +95,7 @@ public class NotificationController {
 
             if (studyAcronymOpt.isEmpty()) {
                 log.warn("Study acronym not set for study {}", studyReference.getReference());
-                return;
+                return null;
             }
 
             studyAcronym = studyAcronymOpt.get().getValue();
@@ -84,11 +116,12 @@ public class NotificationController {
             log.info("{} matched. Sending mail to {}", studyAcronym, matchingRule.getTo());
             sendMail(matchingRule, studyAcronym, studyReference.getDisplay());
         }
+
+        return null;
     }
 
     private void sendMail(MailNotificationRule rule, String studyAcronym, String studyId) {
-        var msg = new SimpleMailMessage()
-        {{
+        var msg = new SimpleMailMessage() {{
             setTo(rule.getTo().toArray(new String[0]));
             setFrom(rule.getFrom());
             setSubject(String.format("%s - Neue Rekrutierungsvorschläge", studyAcronym));
