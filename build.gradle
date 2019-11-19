@@ -23,7 +23,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter:2.2.1.RELEASE'
 	compile 'org.springframework.boot:spring-boot-starter-web:2.2.1.RELEASE'
 	compile 'org.springframework.boot:spring-boot-starter-mail:2.2.1.RELEASE'
-	compile "org.yaml:snakeyaml:1.25"
+	compile 'org.springframework.retry:spring-retry:1.2.4.RELEASE'
+	compile 'org.yaml:snakeyaml:1.25'
 	compile 'ca.uhn.hapi.fhir:org.hl7.fhir.r4:4.1.0'
 	compile 'ca.uhn.hapi.fhir:hapi-fhir-base:4.1.0'
 	compile 'ca.uhn.hapi.fhir:hapi-fhir-client:4.1.0'
