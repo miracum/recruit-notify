@@ -20,4 +20,4 @@ spring:
         debug: true
 
 notificationrules:
-  path: "./notifications.yml"
+  path: "./notifications.sample.yml"
