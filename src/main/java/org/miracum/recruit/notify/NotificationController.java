@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.retry.RetryCallback;
@@ -48,7 +47,7 @@ public class NotificationController {
         this.javaMailSender = javaMailSender;
     }
 
-    @PutMapping(value = "/on-list-change/List/{id}", consumes = {MediaType.APPLICATION_JSON_VALUE})
+    @PutMapping(value = "/on-list-change/List/{id}", consumes = "application/fhir+json")
     public void onListChange(@PathVariable(value = "id") String resourceId, @RequestBody String body) {
         var list = fhirContext.newJsonParser().parseResource(ListResource.class, body);
 
