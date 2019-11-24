@@ -9,6 +9,10 @@ fhir:
 webhook:
   endpoint: "http://localhost:8080/on-list-change"
 
+retry:
+  backoffPeriod: 10000
+  maxAttempts: 10
+
 spring:
   mail:
     host: localhost

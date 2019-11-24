@@ -16,7 +16,7 @@ import java.util.List;
 
 @Component
 public class NotificationConfiguration {
-    private static final Logger log = LoggerFactory.getLogger(NotificationConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NotificationConfiguration.class);
 
     private List<MailNotificationRule> mail = new ArrayList<>();
 
@@ -25,13 +25,13 @@ public class NotificationConfiguration {
 
     @PostConstruct
     public void init() throws FileNotFoundException {
-        log.info("Reading config file.");
+        LOG.info("Reading config file.");
         var yaml = new Yaml(new Constructor(NotificationConfiguration.class));
         InputStream inputStream;
         try {
             inputStream = new FileInputStream(configFilePath);
         } catch (FileNotFoundException e) {
-            log.error("Failed to read configuration file.", e);
+            LOG.error("Failed to read configuration file.", e);
             throw e;
         }
         NotificationConfiguration config = yaml.load(inputStream);
