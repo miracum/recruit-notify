@@ -1,12 +1,12 @@
 plugins {
-	id 'org.springframework.boot' version '2.2.1.RELEASE'
-	id 'io.spring.dependency-management' version '1.0.8.RELEASE'
-	id 'java'
+	id "org.springframework.boot" version "2.2.1.RELEASE"
+	id "io.spring.dependency-management" version "1.0.8.RELEASE"
+	id "java"
 }
 
-group = 'org.miracum.recruit'
-version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
+group = "org.miracum.recruit"
+version = "0.0.1-SNAPSHOT"
+sourceCompatibility = "11"
 
 configurations {
 	developmentOnly
@@ -19,19 +19,23 @@ repositories {
 	mavenCentral()
 }
 
+ext {
+	hapiFhirVersion = "4.1.0"
+}
+
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter:2.2.1.RELEASE'
-	compile 'org.springframework.boot:spring-boot-starter-web:2.2.1.RELEASE'
-	compile 'org.springframework.boot:spring-boot-starter-mail:2.2.1.RELEASE'
-	compile 'org.springframework.retry:spring-retry:1.2.4.RELEASE'
-	compile 'org.yaml:snakeyaml:1.25'
-	compile 'ca.uhn.hapi.fhir:org.hl7.fhir.r4:4.1.0'
-	compile 'ca.uhn.hapi.fhir:hapi-fhir-base:4.1.0'
-	compile 'ca.uhn.hapi.fhir:hapi-fhir-client:4.1.0'
-	compile 'ca.uhn.hapi.fhir:hapi-fhir-structures-r4:4.1.0'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools:2.2.1.RELEASE'
-	testImplementation('org.springframework.boot:spring-boot-starter-test:2.2.1.RELEASE') {
-		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	implementation "org.springframework.boot:spring-boot-starter:2.2.1.RELEASE"
+	implementation "org.springframework.boot:spring-boot-starter-web:2.2.1.RELEASE"
+	implementation "org.springframework.boot:spring-boot-starter-mail:2.2.1.RELEASE"
+	implementation "org.springframework.retry:spring-retry:1.2.4.RELEASE"
+	implementation "org.yaml:snakeyaml:1.25"
+	implementation "ca.uhn.hapi.fhir:org.hl7.fhir.r4:$hapiFhirVersion"
+	implementation "ca.uhn.hapi.fhir:hapi-fhir-base:$hapiFhirVersion"
+	implementation "ca.uhn.hapi.fhir:hapi-fhir-client:$hapiFhirVersion"
+	implementation "ca.uhn.hapi.fhir:hapi-fhir-structures-r4:$hapiFhirVersion"
+	developmentOnly "org.springframework.boot:spring-boot-devtools:2.2.1.RELEASE"
+	testImplementation("org.springframework.boot:spring-boot-starter-test:2.2.1.RELEASE") {
+		exclude group: "org.junit.vintage", module: "junit-vintage-engine"
 	}
 }
 
