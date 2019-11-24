@@ -17,7 +17,6 @@ import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.listener.RetryListenerSupport;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,6 +31,7 @@ public class NotificationController {
     private final FhirContext fhirContext;
     private final NotificationConfiguration config;
     private final JavaMailSender javaMailSender;
+    private final RetryTemplate retryTemplate;
     @Value("${fhir.systems.screeninglistreference}")
     private String screeningListReferenceSystem;
     @Value("${fhir.url}")
@@ -40,7 +40,6 @@ public class NotificationController {
     private String studyAcronymSystem;
     @Value("${notifications.messageBodyScreeningListLinkTemplate}")
     private String messageBodyScreeningListLinkTemplate;
-    private final RetryTemplate retryTemplate;
 
     @Autowired
     public NotificationController(NotificationConfiguration config,
@@ -74,7 +73,7 @@ public class NotificationController {
         // get the ResearchStudy referenced by this changed screening list
         var studyReferenceExtension = list.getExtensionByUrl(screeningListReferenceSystem);
 
-        if(studyReferenceExtension == null) {
+        if (studyReferenceExtension == null) {
             log.warn("studyReferenceExtension not set for {}", list.getId());
             return null;
         }

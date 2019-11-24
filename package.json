@@ -1,18 +1,18 @@
 {
-    "name": "p21-to-fhir",
-    "version": "1.0.0",
-    "description": "ETL job for converting and exporting P21 data to a FHIR server",
-    "private": true,
-    "author": "",
-    "license": "ISC",
-    "devDependencies": {
-        "@commitlint/cli": "8.2.0",
-        "@commitlint/config-conventional": "8.2.0",
-        "husky": "3.1.0"
-    },
-    "husky": {
-        "hooks": {
-            "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-        }
+  "name": "p21-to-fhir",
+  "version": "1.0.0",
+  "description": "ETL job for converting and exporting P21 data to a FHIR server",
+  "private": true,
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@commitlint/cli": "8.2.0",
+    "@commitlint/config-conventional": "8.2.0",
+    "husky": "3.1.0"
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
+  }
 }

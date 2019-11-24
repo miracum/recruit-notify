@@ -16,8 +16,12 @@
           {
             "use": "official",
             "family": "Jones311",
-            "given": ["Bruce167"],
-            "prefix": ["Mr."]
+            "given": [
+              "Bruce167"
+            ],
+            "prefix": [
+              "Mr."
+            ]
           }
         ],
         "gender": "male",

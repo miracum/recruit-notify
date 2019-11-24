@@ -19,15 +19,13 @@ import javax.annotation.PostConstruct;
 @Component
 public class Startup {
     private static final Logger log = LoggerFactory.getLogger(Startup.class);
-
+    private final RetryTemplate retryTemplate;
     @Value("${fhir.subscription.criteria}")
     private String criteria;
     @Value("${fhir.url}")
     private String fhirUrl;
     @Value("${webhook.endpoint}")
     private String endpoint;
-
-    private final RetryTemplate retryTemplate;
 
     @Autowired
     public Startup(RetryTemplate retryTemplate) {
