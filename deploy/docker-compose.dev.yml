@@ -10,15 +10,18 @@ services:
       subscription.resthook.enabled: "true"
       subscription.websocket.enabled: "false"
 
+  list:
+    image: docker.miracum.org/uc1-recruit/list:v1.12.3
+    restart: always
+    ports:
+      - "8083:3000"
+    environment:
+      FHIR_URL: "http://fhir:8080/fhir"
+
   greenmail:
     image: greenmail/standalone:1.5.11
     ports:
       - "3025:3025"
-      - "3110:3110"
-      - "3143:3143"
-      - "3465:3465"
-      - "3993:3993"
-      - "3995:3995"
     environment:
       GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose"
 
