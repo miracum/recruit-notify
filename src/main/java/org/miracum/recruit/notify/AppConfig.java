@@ -1,5 +1,6 @@
 package org.miracum.recruit.notify;
 
+import ca.uhn.fhir.context.FhirContext;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,5 +29,10 @@ public class AppConfig {
         retryTemplate.setRetryPolicy(retryPolicy);
 
         return retryTemplate;
+    }
+
+    @Bean
+    public FhirContext fhirContext() {
+        return FhirContext.forR4();
     }
 }
