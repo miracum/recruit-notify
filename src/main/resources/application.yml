@@ -23,5 +23,6 @@ spring:
       mail:
         debug: true
 
-notificationrules:
-  path: "./notifications.sample.yml"
+notifications:
+  rulePath: "./notifications.sample.yml"
+  messageBodyScreeningListLinkTemplate: "http://localhost:8083/patient-recommendations/%s"

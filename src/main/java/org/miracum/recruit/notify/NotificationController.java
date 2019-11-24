@@ -17,6 +17,7 @@ import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.listener.RetryListenerSupport;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,26 +29,28 @@ import static java.util.stream.Collectors.toList;
 public class NotificationController {
     private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
 
-    private final FhirContext fhirContext = FhirContext.forR4();
+    private final FhirContext fhirContext;
     private final NotificationConfiguration config;
     private final JavaMailSender javaMailSender;
-
     @Value("${fhir.systems.screeninglistreference}")
     private String screeningListReferenceSystem;
     @Value("${fhir.url}")
     private String fhirUrl;
     @Value("${fhir.systems.studyacronym}")
     private String studyAcronymSystem;
-
+    @Value("${notifications.messageBodyScreeningListLinkTemplate}")
+    private String messageBodyScreeningListLinkTemplate;
     private final RetryTemplate retryTemplate;
 
     @Autowired
     public NotificationController(NotificationConfiguration config,
                                   JavaMailSender javaMailSender,
-                                  RetryTemplate retryTemplate) {
+                                  RetryTemplate retryTemplate,
+                                  FhirContext fhirContext) {
         this.config = config;
         this.javaMailSender = javaMailSender;
         this.retryTemplate = retryTemplate;
+        this.fhirContext = fhirContext;
     }
 
     @PutMapping(value = "/on-list-change/List/{id}", consumes = "application/fhir+json")
@@ -69,7 +72,14 @@ public class NotificationController {
 
     private Void handleSubscriptionCallback(ListResource list) {
         // get the ResearchStudy referenced by this changed screening list
-        var studyReference = (Reference) list.getExtensionByUrl(screeningListReferenceSystem).getValue();
+        var studyReferenceExtension = list.getExtensionByUrl(screeningListReferenceSystem);
+
+        if(studyReferenceExtension == null) {
+            log.warn("studyReferenceExtension not set for {}", list.getId());
+            return null;
+        }
+
+        var studyReference = (Reference) studyReferenceExtension.getValue();
 
         var studyAcronym = studyReference.getDisplay();
         if (studyAcronym == null) {
@@ -93,11 +103,11 @@ public class NotificationController {
             studyAcronym = studyAcronymOpt.get().getValue();
         }
 
-        final var s = studyAcronym;
+        final var acronym = studyAcronym;
 
         var matchingRules = config.getMail()
                 .stream()
-                .filter(rule -> rule.getAcronym().equals(s))
+                .filter(rule -> rule.getAcronym().equals(acronym))
                 .collect(toList());
 
         if (matchingRules.isEmpty()) {
@@ -106,18 +116,21 @@ public class NotificationController {
 
         for (var matchingRule : matchingRules) {
             log.info("{} matched. Sending mail to {}", studyAcronym, matchingRule.getTo());
-            sendMail(matchingRule, studyAcronym, studyReference.getDisplay());
+            sendMail(matchingRule, studyAcronym, studyReference.getReferenceElement().getIdPart());
         }
 
         return null;
     }
 
     private void sendMail(MailNotificationRule rule, String studyAcronym, String studyId) {
+        var screeningListLink = String.format(messageBodyScreeningListLinkTemplate, studyId);
         var msg = new SimpleMailMessage() {{
             setTo(rule.getTo().toArray(new String[0]));
             setFrom(rule.getFrom());
             setSubject(String.format("%s - Neue Rekrutierungsvorschläge", studyAcronym));
-            setText(String.format("Studie %s wurde aktualisiert", studyId));
+            setText(String.format("Studie %s wurde aktualisiert. Vorschläge einsehbar unter %s.",
+                    studyAcronym,
+                    screeningListLink));
         }};
 
         javaMailSender.send(msg);
