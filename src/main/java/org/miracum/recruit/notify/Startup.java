@@ -6,12 +6,11 @@ import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import org.hl7.fhir.r4.model.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.listener.RetryListenerSupport;
-import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Component;
 
@@ -28,24 +27,21 @@ public class Startup {
     @Value("${webhook.endpoint}")
     private String endpoint;
 
+    private final RetryTemplate retryTemplate;
+
+    @Autowired
+    public Startup(RetryTemplate retryTemplate) {
+        this.retryTemplate = retryTemplate;
+    }
+
     @PostConstruct
-    private void init() throws Exception {
+    private void init() {
         log.info("Creating subscription resource with criteria {} @ {}", criteria, fhirUrl);
-
-        var retryTemplate = new RetryTemplate();
-
-        var fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(10000);
-        retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
-
-        var retryPolicy = new SimpleRetryPolicy();
-        retryPolicy.setMaxAttempts(20);
-        retryTemplate.setRetryPolicy(retryPolicy);
 
         retryTemplate.registerListener(new RetryListenerSupport() {
             @Override
             public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-                log.warn("Trying to connect to FHIR server caused error. {} attempt.", context.getRetryCount(), throwable);
+                log.warn("Trying to connect to FHIR server caused error; attempt {}", context.getRetryCount(), throwable);
             }
         });
 
@@ -53,7 +49,7 @@ public class Startup {
 
         var outcome = createSubscription();
 
-        log.info("Subscription resource created: {}; id: {}", outcome.getCreated(), outcome.getId());
+        log.info("Subscription resource '{}' created", outcome.getId());
     }
 
     private MethodOutcome createSubscription() {

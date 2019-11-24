@@ -15,9 +15,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
-import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.listener.RetryListenerSupport;
-import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -41,10 +39,15 @@ public class NotificationController {
     @Value("${fhir.systems.studyacronym}")
     private String studyAcronymSystem;
 
+    private final RetryTemplate retryTemplate;
+
     @Autowired
-    public NotificationController(NotificationConfiguration config, JavaMailSender javaMailSender) {
+    public NotificationController(NotificationConfiguration config,
+                                  JavaMailSender javaMailSender,
+                                  RetryTemplate retryTemplate) {
         this.config = config;
         this.javaMailSender = javaMailSender;
+        this.retryTemplate = retryTemplate;
     }
 
     @PutMapping(value = "/on-list-change/List/{id}", consumes = "application/fhir+json")
@@ -52,16 +55,6 @@ public class NotificationController {
         var list = fhirContext.newJsonParser().parseResource(ListResource.class, body);
 
         log.info("onListChange called for list with id {}", resourceId);
-
-        var retryTemplate = new RetryTemplate();
-
-        var fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(10000);
-        retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
-
-        var retryPolicy = new SimpleRetryPolicy();
-        retryPolicy.setMaxAttempts(20);
-        retryTemplate.setRetryPolicy(retryPolicy);
 
         retryTemplate.registerListener(new RetryListenerSupport() {
             @Override
