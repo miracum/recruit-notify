@@ -39,7 +39,7 @@ public class Startup {
         retryTemplate.registerListener(new RetryListenerSupport() {
             @Override
             public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-                log.warn("Trying to connect to FHIR server caused error; attempt {}", context.getRetryCount(), throwable);
+                log.warn("Trying to connect to FHIR server caused '{}'. Attempt {}", throwable.getMessage(), context.getRetryCount());
             }
         });
 
