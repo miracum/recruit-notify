@@ -3,8 +3,11 @@ WORKDIR /home/gradle/src
 COPY --chown=gradle:gradle . .
 RUN gradle build --no-daemon --info
 
-FROM openjdk:11-jre-slim
-COPY --from=build /home/gradle/src/build/libs/*.jar /opt/notify.jar
+FROM adoptopenjdk:11-jre-openj9
+WORKDIR /opt/notify
+COPY --from=build /home/gradle/src/build/libs/*.jar ./notify.jar
+RUN useradd notify && chown -R notify:notify .
+USER notify
 ARG VERSION=0.0.0
 ENV app.version=${VERSION}
-ENTRYPOINT ["java", "-jar", "/opt/notify.jar"]
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=85", "-jar", "/opt/notify/notify.jar"]

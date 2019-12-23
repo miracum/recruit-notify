@@ -2,7 +2,8 @@ image: docker:git
 
 variables:
   DOCKER_REGISTRY: docker.miracum.org
-  IMAGE_PATH: $DOCKER_REGISTRY/uc1-recruit/notify
+  PROJECT_PATH: /uc1-recruit/notify
+  IMAGE_PATH: $DOCKER_REGISTRY$PROJECT_PATH
 
 .docker_registry:
   before_script:
@@ -10,61 +11,64 @@ variables:
   after_script:
     - docker logout $DOCKER_REGISTRY
 
+.job_defaults:
+  only:
+    - merge_requests
+    - master
+
+include:
+  - project: "devops/ci-templates"
+    file: "/preflight/.tidy-files.yml"
+  - project: "devops/ci-templates"
+    file: "/linting/.yamllint.yml"
+  - project: "devops/ci-templates"
+    file: "/linting/.hadolint.yml"
+  - project: "devops/ci-templates"
+    file: "/linting/.markdownlint.yml"
+  - project: "devops/ci-templates"
+    file: "/versioning/.semantic-release-get-version.yml"
+  - project: "devops/ci-templates"
+    file: "/image-scanning/.trivy-scan.yml"
+
 stages:
+  - preflight
   - lint
   - version
   - build
+  - test
   - release
   - deploy
 
-determine next version:
-  image: docker.miracum.org/miracum-devops/semantic-release:latest
-  stage: version
-  script:
-    - npx semantic-release --dry-run
-    - test -e .VERSION || (echo $(git describe --abbrev=0 --tags | tr -d v) > .VERSION && touch .NORELEASE)
-  artifacts:
-    paths:
-      - .VERSION
-      - .NORELEASE
-    expire_in: 1 hour
-  except:
-    - tags
+check file tidiness:
+  extends: .job_defaults
 
-lint dockerfile:
-  stage: lint
-  image: hadolint/hadolint:latest-debian
-  script:
-    - hadolint Dockerfile
-  only:
-    changes:
-      - "*Dockerfile"
-  except:
-    - tags
+hadolint:
+  extends: .job_defaults
 
-lint yaml:
-  stage: lint
-  image:
-    name: cytopia/yamllint:latest
-    entrypoint: ["/bin/sh", "-c"]
-  script:
-    - yamllint .
-  only:
-    changes:
-      - "deploy/*"
-      - "src/**.yml"
-  except:
-    - tags
+yamllint:
+  extends: .job_defaults
+
+markdownlint:
+  extends: .job_defaults
+
+get next version:
+  extends: .job_defaults
 
 build:
   stage: build
-  extends: .docker_registry
+  extends:
+    - .docker_registry
+    - .job_defaults
   script:
     - export VERSION=$(cat .VERSION)
     - docker build -t $IMAGE_PATH:$CI_COMMIT_SHORT_SHA --build-arg VERSION=$VERSION .
     - docker push $IMAGE_PATH:$CI_COMMIT_SHORT_SHA
-  except:
-    - tags
+
+trivy:
+  extends: .job_defaults
+  allow_failure: true
+  variables:
+    IMAGE_FQN: $DOCKER_REGISTRY$PROJECT_PATH:$CI_COMMIT_SHORT_SHA
 
 push to harbor:
   stage: release
@@ -84,3 +88,24 @@ gitlab release:
     - npx semantic-release
   only:
     - master
+
+staging:
+  image:
+    name: docker/compose:1.25.0
+    entrypoint: [""]
+  stage: deploy
+  extends: .docker_registry
+  script:
+    - export IMAGE_TAG=v$(cat .VERSION)
+    - docker-compose -p staging-$CI_PROJECT_NAME -f deploy/docker-compose.staging.yml pull
+    - docker-compose -p staging-$CI_PROJECT_NAME -f deploy/docker-compose.staging.yml up -d
+  environment:
+    name: staging
+    url: https://notify.miracum.org/
+  only:
+    - master
+  tags:
+    - ume
+    - uc1
+    - recruit
+    - staging

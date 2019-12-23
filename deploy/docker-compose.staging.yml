@@ -1,0 +1,26 @@
+version: "3.7"
+
+services:
+  notify:
+    image: docker.miracum.org/uc1-recruit/notify:${IMAGE_TAG}
+    restart: always
+    environment:
+      fhir.url: "http://fhir:8080/fhir"
+      webhook.endpoint: "http://notify:8080/on-list-change"
+      notifications.rulePath: "/etc/notifications.yml"
+    volumes:
+      - ../notifications.sample.yml:/etc/notifications.yml
+    labels:
+      - traefik.docker.network=traefik
+      - traefik.frontend.rule=Host:notify.recruit.miracum.org
+      - traefik.enable=true
+      - traefik.port=8080
+    networks:
+      - traefik
+      - recruit-staging
+
+networks:
+  recruit-staging:
+    external: true
+  traefik:
+    external: true
