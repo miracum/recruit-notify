@@ -14,23 +14,146 @@
         ],
         "name": [
           {
-            "use": "official",
             "family": "Jones311",
-            "given": [
-              "Bruce167"
-            ],
-            "prefix": [
-              "Mr."
-            ]
+            "given": ["Bruce167"]
           }
-        ],
-        "gender": "male",
-        "birthDate": "1917-04-25"
+        ]
       },
       "request": {
         "method": "POST",
         "url": "Patient",
         "ifNoneExist": "identifier=http://ohdsi.org/omop/fhir/subject-identifier|1"
+      }
+    },
+    {
+      "fullUrl": "Patient/1",
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "system": "http://ohdsi.org/omop/fhir/subject-identifier",
+            "value": "2"
+          }
+        ],
+        "name": [
+          {
+            "family": "Tyla133",
+            "given": ["Phan898"]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient",
+        "ifNoneExist": "identifier=http://ohdsi.org/omop/fhir/subject-identifier|2"
+      }
+    },
+    {
+      "fullUrl": "Patient/2",
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [
+          {
+            "system": "http://ohdsi.org/omop/fhir/subject-identifier",
+            "value": "3"
+          }
+        ],
+        "name": [
+          {
+            "family": "Zaine246",
+            "given": ["Wise067"]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient",
+        "ifNoneExist": "identifier=http://ohdsi.org/omop/fhir/subject-identifier|3"
+      }
+    },
+    {
+      "fullUrl": "ResearchSubject/0",
+      "resource": {
+        "resourceType": "ResearchSubject",
+        "status": "candidate",
+        "study": {
+          "reference": "ResearchStudy/0"
+        },
+        "individual": {
+          "reference": "Patient/0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "ResearchSubject"
+      }
+    },
+    {
+      "fullUrl": "ResearchSubject/1",
+      "resource": {
+        "resourceType": "ResearchSubject",
+        "status": "candidate",
+        "study": {
+          "reference": "ResearchStudy/0"
+        },
+        "individual": {
+          "reference": "Patient/1"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "ResearchSubject"
+      }
+    },
+    {
+      "fullUrl": "ResearchSubject/2",
+      "resource": {
+        "resourceType": "ResearchSubject",
+        "status": "ineligible",
+        "study": {
+          "reference": "ResearchStudy/1"
+        },
+        "individual": {
+          "reference": "Patient/0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "ResearchSubject"
+      }
+    },
+    {
+      "fullUrl": "ResearchSubject/3",
+      "resource": {
+        "resourceType": "ResearchSubject",
+        "status": "candidate",
+        "study": {
+          "reference": "ResearchStudy/1"
+        },
+        "individual": {
+          "reference": "Patient/1"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "ResearchSubject"
+      }
+    },
+    {
+      "fullUrl": "ResearchSubject/4",
+      "resource": {
+        "resourceType": "ResearchSubject",
+        "status": "withdrawn",
+        "study": {
+          "reference": "ResearchStudy/1"
+        },
+        "individual": {
+          "reference": "Patient/2"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "ResearchSubject"
       }
     },
     {
@@ -63,12 +186,12 @@
         "entry": [
           {
             "item": {
-              "reference": "Patient/0"
+              "reference": "ResearchSubject/0"
             }
           },
           {
             "item": {
-              "reference": "Patient/0"
+              "reference": "ResearchSubject/1"
             }
           }
         ]
@@ -108,17 +231,17 @@
         "entry": [
           {
             "item": {
-              "reference": "Patient/0"
+              "reference": "ResearchSubject/2"
             }
           },
           {
             "item": {
-              "reference": "Patient/0"
+              "reference": "ResearchSubject/3"
             }
           },
           {
             "item": {
-              "reference": "Patient/0"
+              "reference": "ResearchSubject/4"
             }
           }
         ]
@@ -137,11 +260,12 @@
             "use": "official",
             "system": "http://clinicaltrials.gov/",
             "value": "NCT03521531"
-          },
+          }
+        ],
+        "extension": [
           {
-            "use": "official",
-            "system": "http://miracum.org/fhir/study-acronym",
-            "value": "PROSa"
+            "url": "http://miracum.org/fhir/StructureDefinition/Acronym",
+            "valueString": "PROSa"
           }
         ],
         "title": "Burden and Medical Care of Sarcoma in Germany (PROSa)",
@@ -169,11 +293,12 @@
             "use": "official",
             "system": "http://clinicaltrials.gov/",
             "value": "NCT03555877"
-          },
+          }
+        ],
+        "extension": [
           {
-            "use": "official",
-            "system": "http://miracum.org/fhir/study-acronym",
-            "value": "AMICA"
+            "url": "http://miracum.org/fhir/StructureDefinition/Acronym",
+            "valueString": "AMICA"
           }
         ],
         "title": "Antihormonelle Erhaltungstherapie [...]",
