@@ -8,3 +8,7 @@ mail:
     from: "world@example.com"
     to:
       - "c@example.com"
+  - acronym: "*"
+    from: "me@example.com"
+    to:
+      - "catchall@example.com"
