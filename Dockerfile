@@ -10,4 +10,5 @@ RUN useradd notify && chown -R notify:notify .
 USER notify
 ARG VERSION=0.0.0
 ENV app.version=${VERSION}
+HEALTHCHECK CMD curl -f http://localhost:8080/health || exit 1
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=85", "-jar", "/opt/notify/notify.jar"]

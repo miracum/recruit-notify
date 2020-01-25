@@ -1,6 +1,7 @@
 package org.miracum.recruit.notify;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.rest.client.api.IGenericClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,8 @@ public class AppConfig {
     private int backoffPeriod;
     @Value("${retry.maxAttempts}")
     private int maxAttempts;
+    @Value("${fhir.url}")
+    private String fhirUrl;
 
     @Bean
     public RetryTemplate retryTemplate() {
@@ -34,5 +37,11 @@ public class AppConfig {
     @Bean
     public FhirContext fhirContext() {
         return FhirContext.forR4();
+    }
+
+
+    @Bean
+    public IGenericClient fhirClient(FhirContext fhirContext) {
+        return fhirContext.newRestfulGenericClient(fhirUrl);
     }
 }

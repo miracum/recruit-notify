@@ -1,7 +1,7 @@
 package org.miracum.recruit.notify;
 
-import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.rest.api.MethodOutcome;
+import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import org.hl7.fhir.r4.model.Subscription;
 import org.slf4j.Logger;
@@ -20,21 +20,23 @@ import javax.annotation.PostConstruct;
 public class Startup {
     private static final Logger log = LoggerFactory.getLogger(Startup.class);
     private final RetryTemplate retryTemplate;
+
     @Value("${fhir.subscription.criteria}")
     private String criteria;
-    @Value("${fhir.url}")
-    private String fhirUrl;
     @Value("${webhook.endpoint}")
     private String endpoint;
 
+    private IGenericClient fhirClient;
+
     @Autowired
-    public Startup(RetryTemplate retryTemplate) {
+    public Startup(RetryTemplate retryTemplate, IGenericClient fhirClient) {
         this.retryTemplate = retryTemplate;
+        this.fhirClient = fhirClient;
     }
 
     @PostConstruct
     private void init() {
-        log.info("Creating subscription resource with criteria {} @ {}", criteria, fhirUrl);
+        log.info("Creating subscription resource with criteria {}", criteria);
 
         retryTemplate.registerListener(new RetryListenerSupport() {
             @Override
@@ -43,17 +45,11 @@ public class Startup {
             }
         });
 
-        retryTemplate.execute((RetryCallback<MethodOutcome, FhirClientConnectionException>) retryContext -> createSubscription());
-
-        var outcome = createSubscription();
-
+        var outcome = retryTemplate.execute((RetryCallback<MethodOutcome, FhirClientConnectionException>) retryContext -> createSubscription());
         log.info("Subscription resource '{}' created", outcome.getId());
     }
 
     private MethodOutcome createSubscription() {
-        var ctx = FhirContext.forR4();
-        var client = ctx.newRestfulGenericClient(fhirUrl);
-
         var channel = new Subscription.SubscriptionChannelComponent()
                 .setType(Subscription.SubscriptionChannelType.RESTHOOK)
                 .setEndpoint(endpoint)
@@ -65,7 +61,7 @@ public class Startup {
                 .setReason("Create notifications based on screening list changes.")
                 .setStatus(Subscription.SubscriptionStatus.REQUESTED);
 
-        return client.update()
+        return fhirClient.update()
                 .resource(subscription)
                 .conditional()
                 .where(Subscription.CRITERIA.matchesExactly()
