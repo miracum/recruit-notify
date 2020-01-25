@@ -9,7 +9,6 @@ services:
       webhook.endpoint: "http://notify:8080/on-list-change"
       notifications.rulePath: "/etc/notifications.yml"
     volumes:
-    volumes:
       - type: bind
         source: /cache/uc1/recruit-staging/notifications.yml
         target: /etc/notifications.yml
