@@ -97,6 +97,8 @@ staging:
   extends: .docker_registry
   script:
     - export IMAGE_TAG=v$(cat .VERSION)
+    - mkdir -p /cache/uc1/recruit-staging
+    - cp notifications.sample.yml /cache/uc1/recruit-staging/notifications.yml
     - docker-compose -p staging-$CI_PROJECT_NAME -f deploy/docker-compose.staging.yml pull
     - docker-compose -p staging-$CI_PROJECT_NAME -f deploy/docker-compose.staging.yml up -d
   environment:
