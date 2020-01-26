@@ -6,7 +6,7 @@ services:
     ports:
       - "8082:8080"
     environment:
-      server.address: "http://localhost:8082/fhir"
+      server.address: "http://localhost:8080/fhir"
       subscription.resthook.enabled: "true"
       subscription.websocket.enabled: "false"
 
@@ -18,12 +18,11 @@ services:
     environment:
       FHIR_URL: "http://fhir:8080/fhir"
 
-  greenmail:
-    image: greenmail/standalone:1.5.11
+  maildev:
+    image: djfarrelly/maildev:1.1.0
     ports:
-      - "3025:3025"
-    environment:
-      GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose"
+      - "3025:25"
+      - "2080:80"
 
   loader:
     image: byrnedo/alpine-curl:0.1.8
