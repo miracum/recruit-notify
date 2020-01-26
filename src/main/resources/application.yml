@@ -7,7 +7,7 @@ fhir:
     studyacronym: "http://miracum.org/fhir/study-acronym"
 
 webhook:
-  endpoint: "http://localhost:8080/on-list-change"
+  endpoint: "http://host.docker.internal:8080/on-list-change"
 
 retry:
   backoffPeriod: 10000
