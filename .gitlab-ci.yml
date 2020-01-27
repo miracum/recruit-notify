@@ -91,7 +91,7 @@ gitlab release:
 
 staging:
   image:
-    name: docker/compose:1.25.1
+    name: docker/compose:1.25.3
     entrypoint: [""]
   stage: deploy
   extends: .docker_registry
