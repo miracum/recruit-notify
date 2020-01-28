@@ -39,7 +39,6 @@ public class AppConfig {
         return FhirContext.forR4();
     }
 
-
     @Bean
     public IGenericClient fhirClient(FhirContext fhirContext) {
         return fhirContext.newRestfulGenericClient(fhirUrl);
