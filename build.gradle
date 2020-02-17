@@ -20,7 +20,7 @@ repositories {
 }
 
 ext {
-    hapiFhirVersion = "4.1.0"
+    hapiFhirVersion = "4.2.0"
 }
 
 dependencies {
@@ -31,8 +31,8 @@ dependencies {
     implementation "org.springframework.retry:spring-retry:1.2.5.RELEASE"
     implementation "org.yaml:snakeyaml:1.25"
     implementation "org.springframework.boot:spring-boot-starter-actuator:2.2.4.RELEASE"
-    implementation "io.micrometer:micrometer-registry-prometheus:1.3.3"
-    implementation "io.micrometer:micrometer-core:1.3.3"
+    implementation "io.micrometer:micrometer-registry-prometheus:1.3.5"
+    implementation "io.micrometer:micrometer-core:1.3.5"
     implementation "ca.uhn.hapi.fhir:org.hl7.fhir.r4:$hapiFhirVersion"
     implementation "ca.uhn.hapi.fhir:hapi-fhir-base:$hapiFhirVersion"
     implementation "ca.uhn.hapi.fhir:hapi-fhir-client:$hapiFhirVersion"
