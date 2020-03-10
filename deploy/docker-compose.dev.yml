@@ -25,7 +25,7 @@ services:
       - "2080:80"
 
   loader:
-    image: byrnedo/alpine-curl:0.1.8
+    image: curlimages/curl:7.69.0
     command: -X POST
       -H "Content-Type:application/json"
       --retry-connrefuse
