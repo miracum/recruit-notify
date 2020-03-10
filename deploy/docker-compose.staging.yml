@@ -8,6 +8,10 @@ services:
       fhir.url: "http://fhir:8080/fhir"
       webhook.endpoint: "http://notify:8080/on-list-change"
       notifications.rulePath: "/etc/notifications.yml"
+      spring.mail.host: maildev
+      spring.mail.port: 25
+      spring.mail.username: anyone
+      spring.mail.password: anything
     volumes:
       - type: bind
         source: /cache/uc1/recruit-staging/notifications.yml
