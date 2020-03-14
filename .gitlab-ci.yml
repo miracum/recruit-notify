@@ -37,7 +37,6 @@ stages:
   - build
   - test
   - release
-  - deploy
 
 check file tidiness:
   extends: .job_defaults
@@ -88,26 +87,3 @@ gitlab release:
     - npx semantic-release
   only:
     - master
-
-staging:
-  image:
-    name: docker/compose:1.25.4
-    entrypoint: [""]
-  stage: deploy
-  extends: .docker_registry
-  script:
-    - export IMAGE_TAG=v$(cat .VERSION)
-    - mkdir -p /cache/uc1/recruit-staging
-    - cp notifications.sample.yml /cache/uc1/recruit-staging/notifications.yml
-    - docker-compose -p staging-$CI_PROJECT_NAME -f deploy/docker-compose.staging.yml pull
-    - docker-compose -p staging-$CI_PROJECT_NAME -f deploy/docker-compose.staging.yml up -d
-  environment:
-    name: staging
-    url: https://notify.miracum.org/
-  only:
-    - master
-  tags:
-    - ume
-    - uc1
-    - recruit
-    - staging
