@@ -40,12 +40,17 @@ public class Startup {
 
         retryTemplate.registerListener(new RetryListenerSupport() {
             @Override
-            public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-                log.warn("Trying to connect to FHIR server caused '{}'. Attempt {}", throwable.getMessage(), context.getRetryCount());
+            public <T, E extends Throwable> void onError(RetryContext context,
+                                                         RetryCallback<T, E> callback,
+                                                         Throwable throwable) {
+                log.warn("Trying to connect to FHIR server caused '{}'. Attempt {}",
+                        throwable.getMessage(),
+                        context.getRetryCount());
             }
         });
 
-        var outcome = retryTemplate.execute((RetryCallback<MethodOutcome, FhirClientConnectionException>) retryContext -> createSubscription());
+        var outcome = retryTemplate.execute(
+                (RetryCallback<MethodOutcome, FhirClientConnectionException>) retryContext -> createSubscription());
         log.info("Subscription resource '{}' created", outcome.getId());
     }
 

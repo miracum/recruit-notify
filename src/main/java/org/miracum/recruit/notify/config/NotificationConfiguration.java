@@ -10,6 +10,7 @@ import org.yaml.snakeyaml.constructor.Constructor;
 import javax.annotation.PostConstruct;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,15 +25,19 @@ public class NotificationConfiguration {
     private String configFilePath;
 
     @PostConstruct
-    public void init() throws FileNotFoundException {
+    public void init() throws IOException {
         LOG.info("Reading config file.");
         var yaml = new Yaml(new Constructor(NotificationConfiguration.class));
-        InputStream inputStream;
+        InputStream inputStream = null;
         try {
             inputStream = new FileInputStream(configFilePath);
         } catch (FileNotFoundException e) {
             LOG.error("Failed to read configuration file.", e);
             throw e;
+        } finally {
+            if (inputStream != null) {
+                inputStream.close();
+            }
         }
         NotificationConfiguration config = yaml.load(inputStream);
         this.mail = config.getMail();
