@@ -1,7 +1,10 @@
 plugins {
     id "org.springframework.boot" version "2.2.6.RELEASE"
     id "io.spring.dependency-management" version "1.0.9.RELEASE"
+    id "com.github.spotbugs" version "4.0.5"
     id "java"
+    id "checkstyle"
+    id "jacoco"
 }
 
 group = "org.miracum.recruit"
@@ -40,6 +43,30 @@ dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools:2.2.6.RELEASE"
     testImplementation("org.springframework.boot:spring-boot-starter-test:2.2.6.RELEASE") {
         exclude group: "org.junit.vintage", module: "junit-vintage-engine"
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.5"
+    reportsDir = file("$buildDir/jacoco-reports")
+}
+
+jacocoTestReport {
+    reports {
+        html.enabled false
+        xml.enabled false
+        csv.enabled true
+        csv.destination file("${buildDir}/jacoco/coverage.csv")
+    }
+}
+
+spotbugsMain {
+    reports {
+        html {
+            enabled = true
+            destination = file("$buildDir/reports/spotbugs/spotbugs.html")
+            stylesheet = 'fancy-hist.xsl'
+        }
     }
 }
 

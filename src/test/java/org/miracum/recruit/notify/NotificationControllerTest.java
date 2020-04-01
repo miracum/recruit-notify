@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 class NotificationControllerTest {
-    private final String screeningListReferenceSystem = "http://miracum.org/fhir/screening-list-study-reference";
+    private static final String screeningListReferenceSystem = "http://miracum.org/fhir/screening-list-study-reference";
     @Mock
     private JavaMailSender javaMailSender;
     private RetryTemplate retryTemplate;
@@ -72,14 +72,14 @@ class NotificationControllerTest {
 
     @Test
     public void onListChange_withMatchingNotificationRule_shouldSendEmail() {
-        List<MailNotificationRule> rules = List.of(new MailNotificationRule() {{
-            setAcronym("TEST");
-            setFrom("from@example.com");
-            setTo(List.of("to@example.com"));
-        }});
-        var config = new NotificationConfiguration() {{
-            setMail(rules);
-        }};
+        var notificationRule = new MailNotificationRule();
+        notificationRule.setAcronym("TEST");
+        notificationRule.setFrom("from@example.com");
+        notificationRule.setTo(List.of("to@example.com"));
+
+        List<MailNotificationRule> rules = List.of(notificationRule);
+        var config = new NotificationConfiguration();
+        config.setMail(rules);
 
         var sut = new NotificationController(config,
                 javaMailSender,
@@ -95,12 +95,11 @@ class NotificationControllerTest {
 
     @Test
     public void onListChange_withNoNotificationRule_shouldNotSendEmail() {
-        List<MailNotificationRule> rules = List.of(new MailNotificationRule() {{
-            setAcronym("NOT-TEST");
-        }});
-        var config = new NotificationConfiguration() {{
-            setMail(rules);
-        }};
+        var notificationRule = new MailNotificationRule();
+        notificationRule.setAcronym("NOT-TEST");
+        List<MailNotificationRule> rules = List.of(notificationRule);
+        var config = new NotificationConfiguration();
+        config.setMail(rules);
 
         var sut = new NotificationController(config,
                 javaMailSender,
@@ -116,14 +115,14 @@ class NotificationControllerTest {
 
     @Test
     public void onListChange_withWildCardReceiver_shouldSendEmails() {
-        List<MailNotificationRule> rules = List.of(new MailNotificationRule() {{
-            setAcronym("*");
-            setFrom("from@example.com");
-            setTo(List.of("to@example.com"));
-        }});
-        var config = new NotificationConfiguration() {{
-            setMail(rules);
-        }};
+        var notificationRule = new MailNotificationRule();
+        notificationRule.setAcronym("*");
+        notificationRule.setFrom("from@example.com");
+        notificationRule.setTo(List.of("to@example.com"));
+        List<MailNotificationRule> rules = List.of(notificationRule);
+
+        var config = new NotificationConfiguration();
+        config.setMail(rules);
 
         var sut = new NotificationController(config,
                 javaMailSender,

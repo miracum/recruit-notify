@@ -3,17 +3,22 @@ WORKDIR /home/gradle/src
 COPY --chown=gradle:gradle . .
 RUN gradle build --no-daemon --info
 
+# Collect and print code coverage information:
+RUN gradle --no-daemon jacocoTestReport
+RUN awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print 100*covered/instructions, "% covered" }' build/jacoco/coverage.csv
+
 FROM gcr.io/distroless/java:11
 WORKDIR /opt/notify
+USER nonroot
 COPY --from=build /home/gradle/src/build/libs/*.jar ./notify.jar
 ARG VERSION=0.0.0
+ARG GIT_REF=""
+ARG BUILD_TIME=""
 ENV app.version=${VERSION}
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=90", "-jar", "/opt/notify/notify.jar"]
 
-ARG GIT_REF=""
-ARG BUILD_TIME=""
-
-LABEL org.opencontainers.image.created=${BUILD_TIME} \
+LABEL maintainer="miracum.org" \
+    org.opencontainers.image.created=${BUILD_TIME} \
     org.opencontainers.image.authors="miracum.org" \
     org.opencontainers.image.source="https://gitlab.miracum.org/miracum/uc1/recruit/notify" \
     org.opencontainers.image.version=${VERSION} \
