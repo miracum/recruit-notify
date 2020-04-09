@@ -1,7 +1,7 @@
 {
-  "name": "p21-to-fhir",
+  "name": "uc1-recruit-notify",
   "version": "1.0.0",
-  "description": "ETL job for converting and exporting P21 data to a FHIR server",
+  "description": "Notification module of the MIRACUM UC1 recruitment system.",
   "private": true,
   "author": "",
   "license": "ISC",
@@ -14,5 +14,10 @@
     "hooks": {
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
   }
 }

@@ -1,6 +1,7 @@
 package org.miracum.recruit.notify;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -8,6 +9,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+
+import java.util.HashMap;
 
 @Configuration
 public class AppConfig {
@@ -27,11 +32,18 @@ public class AppConfig {
         fixedBackOffPolicy.setBackOffPeriod(backoffPeriod);
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
 
-        var retryPolicy = new SimpleRetryPolicy();
-        retryPolicy.setMaxAttempts(maxAttempts);
-        retryTemplate.setRetryPolicy(retryPolicy);
+        var retryableExceptions = new HashMap<Class<? extends Throwable>, Boolean>();
+        retryableExceptions.put(HttpClientErrorException.class, false);
+        retryableExceptions.put(HttpServerErrorException.class, true);
+
+        retryTemplate.setRetryPolicy(new SimpleRetryPolicy(maxAttempts, retryableExceptions));
 
         return retryTemplate;
+    }
+
+    @Bean
+    public IParser fhirParser(FhirContext ctx) {
+        return ctx.newJsonParser();
     }
 
     @Bean

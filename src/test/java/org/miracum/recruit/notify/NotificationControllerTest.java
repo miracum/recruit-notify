@@ -1,8 +1,12 @@
 package org.miracum.recruit.notify;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.IParser;
 import org.hl7.fhir.r4.model.ListResource;
 import org.hl7.fhir.r4.model.Reference;
+import org.hl7.fhir.r4.model.ResearchStudy;
+import org.hl7.fhir.r4.model.ResearchSubject;
+import org.hl7.fhir.r4.model.ResearchSubject.ResearchSubjectStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -29,8 +33,12 @@ class NotificationControllerTest {
     private static final String screeningListReferenceSystem = "http://miracum.org/fhir/screening-list-study-reference";
     @Mock
     private JavaMailSender javaMailSender;
+    @Mock
+    private FhirServerProvider fhirServer;
+
     private RetryTemplate retryTemplate;
     private String screeningListBody;
+    private IParser parser;
 
     @BeforeEach
     public void setUp() {
@@ -44,15 +52,17 @@ class NotificationControllerTest {
         retryPolicy.setMaxAttempts(1);
         retryTemplate.setRetryPolicy(retryPolicy);
 
-
-        var screeningList = new ListResource()
-                .setStatus(ListResource.ListStatus.CURRENT)
+        var screeningList = new ListResource().setStatus(ListResource.ListStatus.CURRENT)
                 .setMode(ListResource.ListMode.WORKING);
-        screeningList.addExtension(screeningListReferenceSystem,
-                new Reference("ResearchStudy/0").setDisplay("TEST"));
-
-        var parser = FhirContext.forR4().newJsonParser();
+        screeningList.addExtension(screeningListReferenceSystem, new Reference("ResearchStudy/0").setDisplay("TEST"));
+        screeningList.addEntry().setItem(new Reference("ResearchSubject/0"));
+        var fhirCtx = FhirContext.forR4();
+        parser = fhirCtx.newJsonParser();
         screeningListBody = parser.encodeResourceToString(screeningList);
+
+        when(fhirServer.getResearchStudyFromId(anyString())).thenReturn(new ResearchStudy());
+        when(fhirServer.getResearchSubjectsFromList(any()))
+                .thenReturn(List.of(new ResearchSubject().setStatus(ResearchSubjectStatus.CANDIDATE)));
     }
 
     @Test
@@ -61,9 +71,10 @@ class NotificationControllerTest {
         var sut = new NotificationController(config,
                 javaMailSender,
                 retryTemplate,
-                FhirContext.forR4(),
+                parser,
+                screeningListReferenceSystem,
                 null,
-                null);
+                fhirServer);
 
         sut.onListChange("1", null);
 
@@ -72,22 +83,26 @@ class NotificationControllerTest {
 
     @Test
     public void onListChange_withMatchingNotificationRule_shouldSendEmail() {
-        var notificationRule = new MailNotificationRule();
-        notificationRule.setAcronym("TEST");
-        notificationRule.setFrom("from@example.com");
-        notificationRule.setTo(List.of("to@example.com"));
-
-        List<MailNotificationRule> rules = List.of(notificationRule);
-        var config = new NotificationConfiguration();
-        config.setMail(rules);
+        List<MailNotificationRule> rules = List.of(new MailNotificationRule() {
+            {
+                setAcronym("TEST");
+                setFrom("from@example.com");
+                setTo(List.of("to@example.com"));
+            }
+        });
+        var config = new NotificationConfiguration() {
+            {
+                setMail(rules);
+            }
+        };
 
         var sut = new NotificationController(config,
                 javaMailSender,
                 retryTemplate,
-                FhirContext.forR4(),
+                parser,
                 screeningListReferenceSystem,
-                "");
-
+                "",
+                fhirServer);
         sut.onListChange("1", screeningListBody);
 
         verify(javaMailSender, times(1)).send((SimpleMailMessage) any());
@@ -95,18 +110,24 @@ class NotificationControllerTest {
 
     @Test
     public void onListChange_withNoNotificationRule_shouldNotSendEmail() {
-        var notificationRule = new MailNotificationRule();
-        notificationRule.setAcronym("NOT-TEST");
-        List<MailNotificationRule> rules = List.of(notificationRule);
-        var config = new NotificationConfiguration();
-        config.setMail(rules);
+        List<MailNotificationRule> rules = List.of(new MailNotificationRule() {
+            {
+                setAcronym("NOT-TEST");
+            }
+        });
+        var config = new NotificationConfiguration() {
+            {
+                setMail(rules);
+            }
+        };
 
         var sut = new NotificationController(config,
                 javaMailSender,
                 retryTemplate,
-                FhirContext.forR4(),
+                parser,
                 screeningListReferenceSystem,
-                "");
+                null,
+                fhirServer);
 
         sut.onListChange("1", screeningListBody);
 
@@ -115,24 +136,57 @@ class NotificationControllerTest {
 
     @Test
     public void onListChange_withWildCardReceiver_shouldSendEmails() {
-        var notificationRule = new MailNotificationRule();
-        notificationRule.setAcronym("*");
-        notificationRule.setFrom("from@example.com");
-        notificationRule.setTo(List.of("to@example.com"));
-        List<MailNotificationRule> rules = List.of(notificationRule);
-
-        var config = new NotificationConfiguration();
-        config.setMail(rules);
+        List<MailNotificationRule> rules = List.of(new MailNotificationRule() {
+            {
+                setAcronym("*");
+                setFrom("from@example.com");
+                setTo(List.of("to@example.com"));
+            }
+        });
+        var config = new NotificationConfiguration() {
+            {
+                setMail(rules);
+            }
+        };
 
         var sut = new NotificationController(config,
                 javaMailSender,
                 retryTemplate,
-                FhirContext.forR4(),
+                parser,
                 screeningListReferenceSystem,
-                "");
+                "",
+                fhirServer);
 
         sut.onListChange("1", screeningListBody);
 
         verify(javaMailSender, times(1)).send((SimpleMailMessage) any());
+    }
+
+    @Test
+    public void onListChange_withNoCandidatesInList_shouldNotSendEmails() {
+
+        var screeningList = new ListResource()
+                .setStatus(ListResource.ListStatus.CURRENT)
+                .setMode(ListResource.ListMode.WORKING);
+        screeningList.addExtension(screeningListReferenceSystem, new Reference("ResearchStudy/0").setDisplay("TEST"));
+        screeningList.addEntry()
+                .setItem(new Reference("ResearchSubject/0"))
+                .setItem(new Reference("ResearchSubject/1"));
+
+        when(fhirServer.getResearchSubjectsFromList(any()))
+                .thenReturn(List.of(new ResearchSubject().setStatus(ResearchSubjectStatus.ONSTUDY)));
+
+        var config = new NotificationConfiguration();
+        var sut = new NotificationController(config,
+                javaMailSender,
+                retryTemplate,
+                parser,
+                screeningListReferenceSystem,
+                "",
+                fhirServer);
+
+        sut.onListChange("1", screeningListBody);
+
+        verify(javaMailSender, never()).send((SimpleMailMessage) any());
     }
 }

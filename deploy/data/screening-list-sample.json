@@ -15,9 +15,13 @@
         "name": [
           {
             "family": "Jones311",
-            "given": ["Bruce167"]
+            "given": [
+              "Bruce168"
+            ]
           }
-        ]
+        ],
+        "gender": "male",
+        "birthDate": "1987-04-25"
       },
       "request": {
         "method": "POST",
@@ -38,9 +42,13 @@
         "name": [
           {
             "family": "Tyla133",
-            "given": ["Phan898"]
+            "given": [
+              "Phan898"
+            ]
           }
-        ]
+        ],
+        "gender": "female",
+        "birthDate": "1977-01-15"
       },
       "request": {
         "method": "POST",
@@ -61,9 +69,13 @@
         "name": [
           {
             "family": "Zaine246",
-            "given": ["Wise067"]
+            "given": [
+              "Wise067"
+            ]
           }
-        ]
+        ],
+        "gender": "male",
+        "birthDate": "1967-09-14"
       },
       "request": {
         "method": "POST",
@@ -157,8 +169,10 @@
       }
     },
     {
+      "fullUrl": "List/0",
       "resource": {
         "resourceType": "List",
+        "status": "current",
         "identifier": [
           {
             "system": "http://miracum.org/fhir/screening-list-cohort-identifier",
@@ -202,8 +216,10 @@
       }
     },
     {
+      "fullUrl": "List/1",
       "resource": {
         "resourceType": "List",
+        "status": "current",
         "identifier": [
           {
             "system": "http://miracum.org/fhir/screening-list-cohort-identifier",
@@ -302,7 +318,7 @@
           }
         ],
         "title": "Antihormonelle Erhaltungstherapie [...]",
-        "description": "This is a multicenter, prospective, randomized,",
+        "description": "This is a multicenter, prospective, randomized, [...]",
         "status": "active",
         "relatedArtifact": [
           {
