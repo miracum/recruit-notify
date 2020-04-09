@@ -1,10 +1,11 @@
 package org.miracum.recruit.notify;
 
-import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import org.hl7.fhir.r4.model.ListResource;
 import org.hl7.fhir.r4.model.Reference;
-import org.hl7.fhir.r4.model.ResearchStudy;
+import org.hl7.fhir.r4.model.ResearchSubject;
+import org.hl7.fhir.r4.model.ResearchSubject.ResearchSubjectStatus;
 import org.miracum.recruit.notify.config.MailNotificationRule;
 import org.miracum.recruit.notify.config.NotificationConfiguration;
 import org.slf4j.Logger;
@@ -32,15 +33,14 @@ import static java.util.stream.Collectors.toList;
 public class NotificationController {
     private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
 
-    private final FhirContext fhirContext;
     private final NotificationConfiguration config;
     private final JavaMailSender javaMailSender;
     private final RetryTemplate retryTemplate;
     private final String screeningListReferenceSystem;
     private final String messageBodyScreeningListLinkTemplate;
+    private final IParser fhirParser;
+    private FhirServerProvider fhirServer;
 
-    @Value("${fhir.url}")
-    private String fhirUrl;
     @Value("${fhir.systems.studyacronym}")
     private String studyAcronymSystem;
 
@@ -48,45 +48,48 @@ public class NotificationController {
     public NotificationController(NotificationConfiguration config,
                                   JavaMailSender javaMailSender,
                                   RetryTemplate retryTemplate,
-                                  FhirContext fhirContext,
-                                  @Value("${fhir.systems.screeninglistreference}")
-                                          String screeningListReferenceSystem,
-                                  @Value("${notifications.messageBodyScreeningListLinkTemplate}")
-                                          String messageBodyScreeningListLinkTemplate) {
+                                  IParser fhirParser,
+                                  @Value("${fhir.systems.screeninglistreference}") String screeningListReferenceSystem,
+                                  @Value("${notifications.messageBodyScreeningListLinkTemplate}") String msg,
+                                  FhirServerProvider fhirServer) {
         this.config = config;
         this.javaMailSender = javaMailSender;
         this.retryTemplate = retryTemplate;
-        this.fhirContext = fhirContext;
         this.screeningListReferenceSystem = screeningListReferenceSystem;
-        this.messageBodyScreeningListLinkTemplate = messageBodyScreeningListLinkTemplate;
+        this.messageBodyScreeningListLinkTemplate = msg;
+        this.fhirParser = fhirParser;
+        this.fhirServer = fhirServer;
     }
 
     @PutMapping(value = "/on-list-change/List/{id}", consumes = "application/fhir+json")
-    public void onListChange(@PathVariable(value = "id") String resourceId,
-                             @RequestBody String body) {
+    public void onListChange(@PathVariable(value = "id") String resourceId, @RequestBody String body) {
         if (body == null) {
             log.error("requestBody is null");
             return;
         }
 
-        var list = fhirContext.newJsonParser().parseResource(ListResource.class, body);
+        var list = fhirParser.parseResource(ListResource.class, body);
 
         log.info("onListChange called for list with id {}", resourceId);
 
         retryTemplate.registerListener(new RetryListenerSupport() {
             @Override
-            public <T, E extends Throwable> void onError(RetryContext context,
-                                                         RetryCallback<T, E> callback, Throwable throwable) {
+            public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
+                                                         Throwable throwable) {
                 log.warn("Trying to connect to FHIR server failed. {} attempt.", context.getRetryCount());
             }
         });
 
         retryTemplate.execute(
-                (RetryCallback<Void, FhirClientConnectionException>) retryContext -> handleSubscriptionCallback(
-                        list));
+                (RetryCallback<Void, FhirClientConnectionException>) retryContext -> handleSubscriptionCallback(list));
     }
 
     private Void handleSubscriptionCallback(ListResource list) {
+        if (!list.hasEntry()) {
+            log.warn("Received empty screening list {}, aborting.", list.getId());
+            return null;
+        }
+
         // get the ResearchStudy referenced by this changed screening list
         var studyReferenceExtension = list.getExtensionByUrl(screeningListReferenceSystem);
 
@@ -103,14 +106,18 @@ public class NotificationController {
 
         var studyReference = (Reference) studyReferenceExtension.getValue();
 
+        var researchSubjectList = fhirServer.getResearchSubjectsFromList(list);
+        if (!hasPatientListCandidate(researchSubjectList)) {
+            log.info("list {} doesn't have any candidates", list.getId());
+            return null;
+        }
+
         var studyAcronym = studyReference.getDisplay();
         if (studyAcronym == null) {
-
-            var study = fhirContext.newRestfulGenericClient(fhirUrl).read().resource(ResearchStudy.class)
-                    .withId(studyReference.getReferenceElement().getIdPart()).execute();
-
+            var study = fhirServer.getResearchStudyFromId(studyReference.getReferenceElement().getIdPart());
             var studyAcronymOpt = study.getIdentifier().stream()
-                    .filter(id -> id.getSystem().equals(studyAcronymSystem)).findFirst();
+                    .filter(id -> id.getSystem().equals(studyAcronymSystem))
+                    .findFirst();
 
             if (studyAcronymOpt.isEmpty()) {
                 log.warn("Study acronym not set for study {}", studyReference.getReference());
@@ -122,10 +129,9 @@ public class NotificationController {
 
         final var acronym = studyAcronym;
 
-        // finds all matching entries in the configuration. An entry matches if either the acronym is
-        // equal to this changed study's one or if its a wildcard ('*') receiver.
-        var matchingRules = config.getMail()
-                .stream()
+        // finds all matching entries in the configuration. An entry matches if either
+        // the acronym is equal to this changed study's one or if its a wildcard ('*') receiver.
+        var matchingRules = config.getMail().stream()
                 .filter(rule -> rule.getAcronym().equals(acronym) || rule.getAcronym().equals("*"))
                 .collect(toList());
 
@@ -142,8 +148,14 @@ public class NotificationController {
         return null;
     }
 
+    private boolean hasPatientListCandidate(List<ResearchSubject> researchSubjects) {
+        return researchSubjects
+                .stream()
+                .anyMatch(subject -> subject.getStatus() == ResearchSubjectStatus.CANDIDATE);
+    }
+
     private boolean hasPatientListChanged(ListResource newScreenList) {
-        var lastScreenList = getPreviousScreeningListFromServer(newScreenList);
+        var lastScreenList = fhirServer.getPreviousScreeningListFromServer(newScreenList);
         if (lastScreenList == null) {
             return true;
         }
@@ -159,24 +171,6 @@ public class NotificationController {
                 .collect(Collectors.toSet());
     }
 
-    private ListResource getPreviousScreeningListFromServer(ListResource currentList) {
-        var versionId = currentList.getMeta().getVersionId();
-
-        if (versionId == null) {
-            log.warn("list {} version id is null", currentList.getId());
-            return null;
-        }
-
-        int lastVersionId = Integer.parseInt(versionId) - 1;
-        if (lastVersionId <= 0) {
-            return null;
-        }
-
-        return fhirContext.newRestfulGenericClient(fhirUrl).read().resource(ListResource.class)
-                .withIdAndVersion(currentList.getIdElement().getIdPart(), Integer.toString(lastVersionId))
-                .execute();
-    }
-
     private void sendMail(MailNotificationRule rule, String studyAcronym, String studyId) {
         var screeningListLink = String.format(messageBodyScreeningListLinkTemplate, studyId);
         var msg = new SimpleMailMessage() {
@@ -184,8 +178,8 @@ public class NotificationController {
                 setTo(rule.getTo().toArray(new String[0]));
                 setFrom(rule.getFrom());
                 setSubject(String.format("%s - Neue Rekrutierungsvorschläge", studyAcronym));
-                setText(String.format("Studie %s wurde aktualisiert. Vorschläge einsehbar unter %s.",
-                        studyAcronym, screeningListLink));
+                setText(String.format("Studie %s wurde aktualisiert. Vorschläge einsehbar unter %s.", studyAcronym,
+                        screeningListLink));
             }
         };
 

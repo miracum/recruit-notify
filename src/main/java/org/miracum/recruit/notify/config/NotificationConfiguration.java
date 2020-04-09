@@ -28,19 +28,17 @@ public class NotificationConfiguration {
     public void init() throws IOException {
         LOG.info("Reading config file.");
         var yaml = new Yaml(new Constructor(NotificationConfiguration.class));
-        InputStream inputStream = null;
-        try {
-            inputStream = new FileInputStream(configFilePath);
+        try (InputStream inputStream = new FileInputStream(configFilePath)) {
+            NotificationConfiguration config = yaml.load(inputStream);
+            this.mail = config.getMail();
+            LOG.info("Notification config loaded successfully");
         } catch (FileNotFoundException e) {
-            LOG.error("Failed to read configuration file.", e);
+            LOG.error("Configuration file not found. Searched at {}", configFilePath, e);
             throw e;
-        } finally {
-            if (inputStream != null) {
-                inputStream.close();
-            }
+        } catch (IOException e) {
+            LOG.error("Failed to load configuration. Using {}", configFilePath, e);
+            throw e;
         }
-        NotificationConfiguration config = yaml.load(inputStream);
-        this.mail = config.getMail();
     }
 
     public List<MailNotificationRule> getMail() {
