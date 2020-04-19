@@ -192,7 +192,7 @@
         "code": {
           "coding": [
             {
-              "system": "http://miracum.org/fhir/CodeSystem/screening-list",
+              "system": "https://fhir.miracum.org/uc1/CodeSystem/screeningList",
               "code": "screening-recommendations"
             }
           ]
@@ -239,7 +239,7 @@
         "code": {
           "coding": [
             {
-              "system": "http://miracum.org/fhir/CodeSystem/screening-list",
+              "system": "https://fhir.miracum.org/uc1/CodeSystem/screeningList",
               "code": "screening-recommendations"
             }
           ]
