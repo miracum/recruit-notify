@@ -3,6 +3,7 @@ package org.miracum.recruit.notify;
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +36,7 @@ public class AppConfig {
         var retryableExceptions = new HashMap<Class<? extends Throwable>, Boolean>();
         retryableExceptions.put(HttpClientErrorException.class, false);
         retryableExceptions.put(HttpServerErrorException.class, true);
+        retryableExceptions.put(FhirClientConnectionException.class, true);
 
         retryTemplate.setRetryPolicy(new SimpleRetryPolicy(maxAttempts, retryableExceptions));
 
