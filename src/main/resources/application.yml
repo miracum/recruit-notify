@@ -1,10 +1,10 @@
 fhir:
   url: "http://localhost:8082/fhir"
   subscription:
-    criteria: "List?code=http://miracum.org/fhir/CodeSystem/screening-list|screening-recommendations"
+    criteria: "List?code=https://fhir.miracum.org/uc1/CodeSystem/screeningList|screening-recommendations"
   systems:
     screeninglistreference: "http://miracum.org/fhir/screening-list-study-reference"
-    studyacronym: "http://miracum.org/fhir/study-acronym"
+    studyacronym: "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym"
 
 webhook:
   endpoint: "http://host.docker.internal:8080/on-list-change"
