@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   fhir:
-    image: docker.miracum.org/miracum-data/hapi-fhir-jpaserver:v7.2.0
+    image: docker.miracum.org/miracum-data/hapi-fhir-jpaserver:7.2.2
     ports:
       - "8082:8080"
     environment:
@@ -11,7 +11,7 @@ services:
       subscription.websocket.enabled: "false"
 
   list:
-    image: docker.miracum.org/uc1-recruit/list:v1.18.1
+    image: docker.miracum.org/uc1-recruit/list:v1.18.5
     restart: always
     ports:
       - "8083:8080"
