@@ -39,7 +39,7 @@ public class NotificationController {
     private final String screeningListReferenceSystem;
     private final String messageBodyScreeningListLinkTemplate;
     private final IParser fhirParser;
-    private FhirServerProvider fhirServer;
+    private final FhirServerProvider fhirServer;
 
     @Value("${fhir.systems.studyacronym}")
     private String studyAcronymSystem;
@@ -50,7 +50,7 @@ public class NotificationController {
                                   RetryTemplate retryTemplate,
                                   IParser fhirParser,
                                   @Value("${fhir.systems.screeninglistreference}") String screeningListReferenceSystem,
-                                  @Value("${notifications.messageBodyScreeningListLinkTemplate}") String msg,
+                                  @Value("${notify.screeningListLinkTemplate}") String msg,
                                   FhirServerProvider fhirServer) {
         this.config = config;
         this.javaMailSender = javaMailSender;
@@ -63,28 +63,28 @@ public class NotificationController {
 
     @PutMapping(value = "/on-list-change/List/{id}", consumes = "application/fhir+json")
     public void onListChange(@PathVariable(value = "id") String resourceId, @RequestBody String body) {
+        log.info("onListChange invoked for list with id {}", resourceId);
+
         if (body == null) {
-            log.error("requestBody is null");
+            log.error("request body is null");
             return;
         }
 
         var list = fhirParser.parseResource(ListResource.class, body);
 
-        log.info("onListChange called for list with id {}", resourceId);
-
         retryTemplate.registerListener(new RetryListenerSupport() {
             @Override
             public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
                                                          Throwable throwable) {
-                log.warn("Trying to connect to FHIR server failed. {} attempt.", context.getRetryCount());
+                log.warn("handleSubscription failed. {} attempt.", context.getRetryCount());
             }
         });
 
         retryTemplate.execute(
-                (RetryCallback<Void, FhirClientConnectionException>) retryContext -> handleSubscriptionCallback(list));
+                (RetryCallback<Void, FhirClientConnectionException>) retryContext -> handleSubscription(list));
     }
 
-    private Void handleSubscriptionCallback(ListResource list) {
+    private Void handleSubscription(ListResource list) {
         if (!list.hasEntry()) {
             log.warn("Received empty screening list {}, aborting.", list.getId());
             return null;
@@ -112,19 +112,31 @@ public class NotificationController {
             return null;
         }
 
-        var studyAcronym = studyReference.getDisplay();
-        if (studyAcronym == null) {
+        var studyAcronym = "";
+
+        if (studyReference.hasDisplay()) {
+            studyAcronym = studyReference.getDisplay();
+        } else {
             var study = fhirServer.getResearchStudyFromId(studyReference.getReferenceElement().getIdPart());
-            var studyAcronymOpt = study.getIdentifier().stream()
-                    .filter(id -> id.getSystem().equals(studyAcronymSystem))
-                    .findFirst();
 
-            if (studyAcronymOpt.isEmpty()) {
-                log.warn("Study acronym not set for study {}", studyReference.getReference());
-                return null;
+            if (study.hasExtension(studyAcronymSystem)) {
+                var studyAcronymExtension = study.getExtensionByUrl(studyAcronymSystem);
+                studyAcronym = studyAcronymExtension.getValue().toString();
+                log.info("Using acronym '{}' from extension as study identifier for {}.",
+                        studyAcronym,
+                        studyReference.getReference());
+            } else {
+                log.warn("Study acronym not set for study {}.", studyReference.getReference());
+                if (study.hasTitle()) {
+                    studyAcronym = study.getTitle();
+                    log.info("Using title '{}' as study identifier for {}.",
+                            studyAcronym,
+                            studyReference.getReference());
+                } else {
+                    log.error("No identifier available for study {}. Aborting.", studyReference.getReference());
+                    return null;
+                }
             }
-
-            studyAcronym = studyAcronymOpt.get().getValue();
         }
 
         final var acronym = studyAcronym;

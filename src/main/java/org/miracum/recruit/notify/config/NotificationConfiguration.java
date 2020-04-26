@@ -21,7 +21,7 @@ public class NotificationConfiguration {
 
     private List<MailNotificationRule> mail = new ArrayList<>();
 
-    @Value("${notifications.rulePath}")
+    @Value("${notify.rulePath}")
     private String configFilePath;
 
     @PostConstruct
