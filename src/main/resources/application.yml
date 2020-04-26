@@ -3,7 +3,7 @@ fhir:
   subscription:
     criteria: "List?code=https://fhir.miracum.org/uc1/CodeSystem/screeningList|screening-recommendations"
   systems:
-    screeninglistreference: "http://miracum.org/fhir/screening-list-study-reference"
+    screeninglistreference: "https://fhir.miracum.org/uc1/StructureDefinition/belongsToStudy"
     studyacronym: "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym"
 
 webhook:
@@ -33,7 +33,6 @@ management:
         health: health
         prometheus: metrics
 
-
-notifications:
+notify:
   rulePath: "./notifications.sample.yml"
-  messageBodyScreeningListLinkTemplate: "http://localhost:8083/patient-recommendations/%s"
+  screeningListLinkTemplate: "http://localhost:8083/recommendations/%s"

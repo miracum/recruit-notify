@@ -181,7 +181,7 @@
         ],
         "extension": [
           {
-            "url": "http://miracum.org/fhir/screening-list-study-reference",
+            "url": "https://fhir.miracum.org/uc1/StructureDefinition/belongsToStudy",
             "valueReference": {
               "reference": "ResearchStudy/0",
               "display": "PROSa"
@@ -228,7 +228,7 @@
         ],
         "extension": [
           {
-            "url": "http://miracum.org/fhir/screening-list-study-reference",
+            "url": "https://fhir.miracum.org/uc1/StructureDefinition/belongsToStudy",
             "valueReference": {
               "reference": "ResearchStudy/1",
               "display": "AMICA"
@@ -280,7 +280,7 @@
         ],
         "extension": [
           {
-            "url": "http://miracum.org/fhir/StructureDefinition/Acronym",
+            "url": "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym",
             "valueString": "PROSa"
           }
         ],
@@ -313,7 +313,7 @@
         ],
         "extension": [
           {
-            "url": "http://miracum.org/fhir/StructureDefinition/Acronym",
+            "url": "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym",
             "valueString": "AMICA"
           }
         ],
