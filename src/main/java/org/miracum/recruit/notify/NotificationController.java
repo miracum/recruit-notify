@@ -154,7 +154,7 @@ public class NotificationController {
 
         for (var matchingRule : matchingRules) {
             log.info("{} matched. Sending mail to {}", studyAcronym, matchingRule.getTo());
-            sendMail(matchingRule, studyAcronym, studyReference.getReferenceElement().getIdPart());
+            sendMail(matchingRule, studyAcronym, list.getIdElement().getIdPart());
         }
 
         return null;
@@ -183,8 +183,8 @@ public class NotificationController {
                 .collect(Collectors.toSet());
     }
 
-    private void sendMail(MailNotificationRule rule, String studyAcronym, String studyId) {
-        var screeningListLink = String.format(messageBodyScreeningListLinkTemplate, studyId);
+    private void sendMail(MailNotificationRule rule, String studyAcronym, String listId) {
+        var screeningListLink = String.format(messageBodyScreeningListLinkTemplate, listId);
         var msg = new SimpleMailMessage() {
             {
                 setTo(rule.getTo().toArray(new String[0]));
