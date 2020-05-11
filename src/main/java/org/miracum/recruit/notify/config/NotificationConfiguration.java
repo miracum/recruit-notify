@@ -36,7 +36,7 @@ public class NotificationConfiguration {
             LOG.error("Configuration file not found. Searched at {}", configFilePath, e);
             throw e;
         } catch (IOException e) {
-            LOG.error("Failed to load configuration. Using {}", configFilePath, e);
+            LOG.error("Failed to load configuration from {}", configFilePath, e);
             throw e;
         }
     }
