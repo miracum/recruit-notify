@@ -1,7 +1,6 @@
 package org.miracum.recruit.notify;
 
 import ca.uhn.fhir.parser.IParser;
-import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import org.hl7.fhir.r4.model.ListResource;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ResearchSubject;
@@ -72,6 +71,11 @@ public class NotificationController {
 
         var list = fhirParser.parseResource(ListResource.class, body);
 
+        if (!list.hasEntry()) {
+            log.warn("Received empty screening list {}, aborting.", list.getId());
+            return;
+        }
+
         retryTemplate.registerListener(new RetryListenerSupport() {
             @Override
             public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
@@ -80,16 +84,10 @@ public class NotificationController {
             }
         });
 
-        retryTemplate.execute(
-                (RetryCallback<Void, FhirClientConnectionException>) retryContext -> handleSubscription(list));
+        retryTemplate.execute(retryContext -> handleSubscription(list));
     }
 
     private Void handleSubscription(ListResource list) {
-        if (!list.hasEntry()) {
-            log.warn("Received empty screening list {}, aborting.", list.getId());
-            return null;
-        }
-
         // get the ResearchStudy referenced by this changed screening list
         var studyReferenceExtension = list.getExtensionByUrl(screeningListReferenceSystem);
 
@@ -179,21 +177,18 @@ public class NotificationController {
 
     private Set<String> getResearchSubjectIDs(List<ListResource.ListEntryComponent> entry) {
         return entry.stream()
-                .map((item) -> item.getItem().getReferenceElement().getIdPart())
+                .map(item -> item.getItem().getReferenceElement().getIdPart())
                 .collect(Collectors.toSet());
     }
 
     private void sendMail(MailNotificationRule rule, String studyAcronym, String listId) {
         var screeningListLink = String.format(messageBodyScreeningListLinkTemplate, listId);
-        var msg = new SimpleMailMessage() {
-            {
-                setTo(rule.getTo().toArray(new String[0]));
-                setFrom(rule.getFrom());
-                setSubject(String.format("%s - Neue Rekrutierungsvorschläge", studyAcronym));
-                setText(String.format("Studie %s wurde aktualisiert. Vorschläge einsehbar unter %s.", studyAcronym,
-                        screeningListLink));
-            }
-        };
+        var msg = new SimpleMailMessage();
+        msg.setTo(rule.getTo().toArray(new String[0]));
+        msg.setFrom(rule.getFrom());
+        msg.setSubject(String.format("%s - Neue Rekrutierungsvorschläge", studyAcronym));
+        msg.setText(String.format("Studie %s wurde aktualisiert. Vorschläge einsehbar unter %s.", studyAcronym,
+                screeningListLink));
 
         javaMailSender.send(msg);
     }

@@ -2,7 +2,9 @@ package org.miracum.recruit.notify;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.util.BundleUtil;
+import org.hl7.fhir.instance.model.api.IAnyResource;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
+import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.ListResource;
 import org.hl7.fhir.r4.model.ResearchStudy;
@@ -17,7 +19,7 @@ import java.util.List;
 
 @Service
 public class FhirServerProvider {
-    private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
+    private static final Logger log = LoggerFactory.getLogger(FhirServerProvider.class);
 
     private final IGenericClient fhirClient;
 
@@ -48,8 +50,8 @@ public class FhirServerProvider {
     public List<ResearchSubject> getResearchSubjectsFromList(ListResource list) {
         var listBundle = fhirClient.search()
                 .forResource(ListResource.class)
-                .where(ListResource.RES_ID.exactly().identifier(list.getId()))
-                .include(ListResource.INCLUDE_ALL)
+                .where(IAnyResource.RES_ID.exactly().identifier(list.getId()))
+                .include(IBaseResource.INCLUDE_ALL)
                 .returnBundle(Bundle.class)
                 .execute();
 

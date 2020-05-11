@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class FhirServerHealthCheck implements HealthIndicator {
 
-    private IGenericClient fhirClient;
+    private final IGenericClient fhirClient;
 
     @Autowired
     public FhirServerHealthCheck(IGenericClient fhirClient) {
