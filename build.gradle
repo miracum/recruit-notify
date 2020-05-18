@@ -23,7 +23,7 @@ repositories {
 }
 
 ext {
-    hapiFhirVersion = "4.2.0"
+    hapiFhirVersion = "5.0.0"
 }
 
 dependencies {
