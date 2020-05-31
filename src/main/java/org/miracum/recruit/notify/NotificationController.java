@@ -11,8 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.listener.RetryListenerSupport;
@@ -21,7 +21,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
+import javax.mail.MessagingException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,31 +36,34 @@ public class NotificationController {
     private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
 
     private final NotificationConfiguration config;
-    private final JavaMailSender javaMailSender;
+    private final JavaMailSender mailSender;
     private final RetryTemplate retryTemplate;
     private final String screeningListReferenceSystem;
     private final String messageBodyScreeningListLinkTemplate;
     private final IParser fhirParser;
     private final FhirServerProvider fhirServer;
+    private final TemplateEngine templateEngine;
 
     @Value("${fhir.systems.studyacronym}")
     private String studyAcronymSystem;
 
     @Autowired
     public NotificationController(NotificationConfiguration config,
-                                  JavaMailSender javaMailSender,
+                                  JavaMailSender mailSender,
                                   RetryTemplate retryTemplate,
                                   IParser fhirParser,
                                   @Value("${fhir.systems.screeninglistreference}") String screeningListReferenceSystem,
                                   @Value("${notify.screeningListLinkTemplate}") String msg,
-                                  FhirServerProvider fhirServer) {
+                                  FhirServerProvider fhirServer,
+                                  TemplateEngine templateEngine) {
         this.config = config;
-        this.javaMailSender = javaMailSender;
+        this.mailSender = mailSender;
         this.retryTemplate = retryTemplate;
         this.screeningListReferenceSystem = screeningListReferenceSystem;
         this.messageBodyScreeningListLinkTemplate = msg;
         this.fhirParser = fhirParser;
         this.fhirServer = fhirServer;
+        this.templateEngine = templateEngine;
     }
 
     @PutMapping(value = "/on-list-change/List/{id}", consumes = "application/fhir+json")
@@ -152,7 +158,11 @@ public class NotificationController {
 
         for (var matchingRule : matchingRules) {
             log.info("{} matched. Sending mail to {}", studyAcronym, matchingRule.getTo());
-            sendMail(matchingRule, studyAcronym, list.getIdElement().getIdPart());
+            try {
+                sendMail(matchingRule, studyAcronym, list.getIdElement().getIdPart());
+            } catch (MessagingException e) {
+                log.error("Failed to render notification email", e);
+            }
         }
 
         return null;
@@ -181,15 +191,29 @@ public class NotificationController {
                 .collect(Collectors.toSet());
     }
 
-    private void sendMail(MailNotificationRule rule, String studyAcronym, String listId) {
-        var screeningListLink = String.format(messageBodyScreeningListLinkTemplate, listId);
-        var msg = new SimpleMailMessage();
-        msg.setTo(rule.getTo().toArray(new String[0]));
-        msg.setFrom(rule.getFrom());
-        msg.setSubject(String.format("%s - Neue Rekrutierungsvorschläge", studyAcronym));
-        msg.setText(String.format("Studie %s wurde aktualisiert. Vorschläge einsehbar unter %s.", studyAcronym,
-                screeningListLink));
+    private void sendMail(MailNotificationRule rule, String studyAcronym, String listId) throws MessagingException {
+        var screeningListUrl = String.format(messageBodyScreeningListLinkTemplate, listId);
 
-        javaMailSender.send(msg);
+        var subject = String.format("MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die %s Studie",
+                studyAcronym);
+
+        // Prepare the evaluation context
+        var ctx = new Context();
+        ctx.setVariable("studyName", studyAcronym);
+        ctx.setVariable("screeningListUrl", screeningListUrl);
+
+        // Prepare message using a Spring helper
+        var mimeMessage = this.mailSender.createMimeMessage();
+        var message = new MimeMessageHelper(mimeMessage, false, "UTF-8");
+        message.setSubject(subject);
+        message.setFrom(rule.getFrom());
+        message.setTo(rule.getTo().toArray(new String[0]));
+
+        // Create the HTML body using Thymeleaf
+        var htmlContent = this.templateEngine.process("notification-mail.html", ctx);
+        message.setText(htmlContent, true);
+
+        // Send mail
+        this.mailSender.send(mimeMessage);
     }
 }

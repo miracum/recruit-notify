@@ -12,12 +12,13 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.spring5.SpringTemplateEngine;
 
 import java.util.HashMap;
 
 @Configuration
 public class AppConfig {
-
     @Value("${retry.backoffPeriod}")
     private int backoffPeriod;
     @Value("${retry.maxAttempts}")
@@ -56,5 +57,10 @@ public class AppConfig {
     @Bean
     public IGenericClient fhirClient(FhirContext fhirContext) {
         return fhirContext.newRestfulGenericClient(fhirUrl);
+    }
+
+    @Bean
+    public TemplateEngine emailTemplateEngine() {
+        return new SpringTemplateEngine();
     }
 }
