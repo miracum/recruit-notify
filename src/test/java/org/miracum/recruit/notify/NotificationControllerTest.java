@@ -21,7 +21,9 @@ import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.thymeleaf.TemplateEngine;
 
+import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 import java.util.List;
 
@@ -43,6 +45,9 @@ class NotificationControllerTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
+
+        var mimeMessage = new MimeMessage((Session) null);
+        when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
 
         retryTemplate = new RetryTemplate();
         var fixedBackOffPolicy = new FixedBackOffPolicy();
@@ -74,7 +79,8 @@ class NotificationControllerTest {
                 parser,
                 screeningListReferenceSystem,
                 null,
-                fhirServer);
+                fhirServer,
+                new TemplateEngine());
 
         sut.onListChange("1", null);
 
@@ -102,10 +108,11 @@ class NotificationControllerTest {
                 parser,
                 screeningListReferenceSystem,
                 "",
-                fhirServer);
+                fhirServer,
+                new TemplateEngine());
         sut.onListChange("1", screeningListBody);
 
-        verify(javaMailSender, times(1)).send((SimpleMailMessage) any());
+        verify(javaMailSender, times(1)).send((MimeMessage) any());
     }
 
     @Test
@@ -127,11 +134,12 @@ class NotificationControllerTest {
                 parser,
                 screeningListReferenceSystem,
                 null,
-                fhirServer);
+                fhirServer,
+                new TemplateEngine());
 
         sut.onListChange("1", screeningListBody);
 
-        verify(javaMailSender, never()).send((SimpleMailMessage) any());
+        verify(javaMailSender, never()).send((MimeMessage) any());
     }
 
     @Test
@@ -155,16 +163,16 @@ class NotificationControllerTest {
                 parser,
                 screeningListReferenceSystem,
                 "",
-                fhirServer);
+                fhirServer,
+                new TemplateEngine());
 
         sut.onListChange("1", screeningListBody);
 
-        verify(javaMailSender, times(1)).send((SimpleMailMessage) any());
+        verify(javaMailSender, times(1)).send((MimeMessage) any());
     }
 
     @Test
     public void onListChange_withNoCandidatesInList_shouldNotSendEmails() {
-
         var screeningList = new ListResource()
                 .setStatus(ListResource.ListStatus.CURRENT)
                 .setMode(ListResource.ListMode.WORKING);
@@ -183,7 +191,8 @@ class NotificationControllerTest {
                 parser,
                 screeningListReferenceSystem,
                 "",
-                fhirServer);
+                fhirServer,
+                new TemplateEngine());
 
         sut.onListChange("1", screeningListBody);
 
