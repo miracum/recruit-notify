@@ -1,0 +1,32 @@
+notify:
+  screeningListLinkTemplate: "http://localhost:8083/recommendations/%s"
+  rules:
+    mail:
+      - acronym: "PROSa"
+        from: "hello@example.com"
+        to:
+          - "a@example.com"
+          - "b@example.com"
+      - acronym: "AMICA"
+        from: "world@example.com"
+        to:
+          - "c@example.com"
+      - acronym: "*"
+        from: "me@example.com"
+        to:
+          - "catchall@example.com"
+spring:
+  mail:
+    host: localhost
+    port: 3025
+    username: user
+    password: pass
+    properties:
+      mail:
+        debug: true
+
+webhook:
+  endpoint: "http://host.docker.internal:8080/on-list-change"
+
+fhir:
+  url: "http://localhost:8082/fhir"

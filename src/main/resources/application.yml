@@ -1,27 +1,22 @@
 fhir:
-  url: "http://localhost:8082/fhir"
+  url: ""
   subscription:
     criteria: "List?code=https://fhir.miracum.org/uc1/CodeSystem/screeningList|screening-recommendations"
   systems:
-    screeninglistreference: "https://fhir.miracum.org/uc1/StructureDefinition/belongsToStudy"
-    studyacronym: "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym"
+    screeninglistReference: "https://fhir.miracum.org/uc1/StructureDefinition/belongsToStudy"
+    studyAcronym: "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym"
 
 webhook:
-  endpoint: "http://host.docker.internal:8080/on-list-change"
+  endpoint: ""
 
 retry:
   backoffPeriod: 10000
   maxAttempts: 10
 
 spring:
-  mail:
-    host: localhost
-    port: 3025
-    username: user
-    password: pass
-    properties:
-      mail:
-        debug: true
+  mail: {}
+  profiles:
+    active: dev
 
 management:
   endpoints:
@@ -34,5 +29,6 @@ management:
         prometheus: metrics
 
 notify:
-  rulePath: "./notifications.sample.yml"
-  screeningListLinkTemplate: "http://localhost:8083/recommendations/%s"
+  screeningListLinkTemplate: ""
+  rules:
+    mail: []

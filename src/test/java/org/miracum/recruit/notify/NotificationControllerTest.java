@@ -10,8 +10,7 @@ import org.hl7.fhir.r4.model.ResearchSubject.ResearchSubjectStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
-import org.miracum.recruit.notify.config.MailNotificationRule;
-import org.miracum.recruit.notify.config.NotificationConfiguration;
+import org.miracum.recruit.notify.NotificationRuleConfig.MailNotificationRule;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -72,7 +71,7 @@ class NotificationControllerTest {
 
     @Test
     public void onListChange_withEmptyRequestBody_shouldNotSendEmail() {
-        var config = new NotificationConfiguration();
+        var config = new NotificationRuleConfig();
         var sut = new NotificationController(config,
                 javaMailSender,
                 retryTemplate,
@@ -96,7 +95,7 @@ class NotificationControllerTest {
                 setTo(List.of("to@example.com"));
             }
         });
-        var config = new NotificationConfiguration() {
+        var config = new NotificationRuleConfig() {
             {
                 setMail(rules);
             }
@@ -122,7 +121,7 @@ class NotificationControllerTest {
                 setAcronym("NOT-TEST");
             }
         });
-        var config = new NotificationConfiguration() {
+        var config = new NotificationRuleConfig() {
             {
                 setMail(rules);
             }
@@ -151,7 +150,7 @@ class NotificationControllerTest {
                 setTo(List.of("to@example.com"));
             }
         });
-        var config = new NotificationConfiguration() {
+        var config = new NotificationRuleConfig() {
             {
                 setMail(rules);
             }
@@ -184,7 +183,7 @@ class NotificationControllerTest {
         when(fhirServer.getResearchSubjectsFromList(any()))
                 .thenReturn(List.of(new ResearchSubject().setStatus(ResearchSubjectStatus.ONSTUDY)));
 
-        var config = new NotificationConfiguration();
+        var config = new NotificationRuleConfig();
         var sut = new NotificationController(config,
                 javaMailSender,
                 retryTemplate,
