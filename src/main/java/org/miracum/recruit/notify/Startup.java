@@ -21,14 +21,11 @@ import java.net.URL;
 @Component
 public class Startup {
     private static final Logger log = LoggerFactory.getLogger(Startup.class);
-
-    @Value("${fhir.subscription.criteria}")
-    private String criteria;
-
     private final URL webhookEndpoint;
-
     private final RetryTemplate retryTemplate;
     private final IGenericClient fhirClient;
+    @Value("${fhir.subscription.criteria}")
+    private String criteria;
 
     @Autowired
     public Startup(RetryTemplate retryTemplate,
