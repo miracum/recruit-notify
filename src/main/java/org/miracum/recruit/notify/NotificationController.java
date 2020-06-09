@@ -5,8 +5,7 @@ import org.hl7.fhir.r4.model.ListResource;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ResearchSubject;
 import org.hl7.fhir.r4.model.ResearchSubject.ResearchSubjectStatus;
-import org.miracum.recruit.notify.config.MailNotificationRule;
-import org.miracum.recruit.notify.config.NotificationConfiguration;
+import org.miracum.recruit.notify.NotificationRuleConfig.MailNotificationRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +34,7 @@ import static java.util.stream.Collectors.toList;
 public class NotificationController {
     private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
 
-    private final NotificationConfiguration config;
+    private final NotificationRuleConfig config;
     private final JavaMailSender mailSender;
     private final RetryTemplate retryTemplate;
     private final String screeningListReferenceSystem;
@@ -48,7 +47,7 @@ public class NotificationController {
     private String studyAcronymSystem;
 
     @Autowired
-    public NotificationController(NotificationConfiguration config,
+    public NotificationController(NotificationRuleConfig config,
                                   JavaMailSender mailSender,
                                   RetryTemplate retryTemplate,
                                   IParser fhirParser,

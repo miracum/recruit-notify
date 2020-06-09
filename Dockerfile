@@ -15,7 +15,8 @@ COPY --from=build /home/gradle/src/build/libs/*.jar ./notify.jar
 ARG VERSION=0.0.0
 ARG GIT_REF=""
 ARG BUILD_TIME=""
-ENV app.version=${VERSION}
+ENV APP_VERSION=${VERSION} \
+    SPRING_PROFILES_ACTIVE="prod"
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=90", "-jar", "/opt/notify/notify.jar"]
 
 LABEL maintainer="miracum.org" \
