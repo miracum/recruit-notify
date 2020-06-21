@@ -18,17 +18,18 @@ services:
     image: curlimages/curl:7.70.0
     command: >
       -X GET
+      --fail
       --retry-connrefuse
       --connect-timeout 10
       --max-time 60
       --retry 5
       --retry-delay 10
-      http://notify:8080/health
+      http://notify:8080/actuator/health
     depends_on:
       - notify
 
   fhir:
-    image: docker.miracum.org/miracum-data/hapi-fhir-jpaserver:8.0.1
+    image: docker.miracum.org/miracum-data/hapi-fhir-jpaserver:8.1.1
     environment:
       server.address.override: "http://fhir:8080/fhir"
 
