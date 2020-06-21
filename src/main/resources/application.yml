@@ -7,7 +7,7 @@ fhir:
     studyAcronym: "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym"
 
 webhook:
-  endpoint: ""
+  endpoint: "http://localhost:8080/on-list-change"
 
 retry:
   backoffPeriod: 10000
@@ -19,16 +19,19 @@ spring:
     active: dev
 
 management:
+  endpoint:
+    health:
+      show-details: always
+  health:
+    probes:
+      enabled: true
   endpoints:
     web:
       exposure:
-        include: "health, prometheus, info"
-      base-path: /
-      path-mapping:
-        health: health
-        prometheus: metrics
+        include: "*"
 
 notify:
   screeningListLinkTemplate: ""
   rules:
     mail: []
+  version: 0.0.0-dev
