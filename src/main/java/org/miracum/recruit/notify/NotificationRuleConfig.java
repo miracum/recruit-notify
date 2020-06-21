@@ -19,6 +19,13 @@ public class NotificationRuleConfig {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return "NotificationRuleConfig{" +
+                "mail=" + mail +
+                '}';
+    }
+
     public static class MailNotificationRule {
         private String acronym;
         private String from;
@@ -46,6 +53,15 @@ public class NotificationRuleConfig {
 
         public void setFrom(String from) {
             this.from = from;
+        }
+
+        @Override
+        public String toString() {
+            return "MailNotificationRule{" +
+                    "acronym='" + acronym + '\'' +
+                    ", from='" + from + '\'' +
+                    ", to=" + to +
+                    '}';
         }
     }
 }

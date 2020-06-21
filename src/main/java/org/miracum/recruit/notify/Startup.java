@@ -30,7 +30,8 @@ public class Startup {
     @Autowired
     public Startup(RetryTemplate retryTemplate,
                    IGenericClient fhirClient,
-                   @Value("${webhook.endpoint}") URL webhookEndpoint) throws MalformedURLException, URISyntaxException {
+                   @Value("${webhook.endpoint}") URL webhookEndpoint,
+                   NotificationRuleConfig notifyRules) throws MalformedURLException, URISyntaxException {
         this.retryTemplate = retryTemplate;
         this.fhirClient = fhirClient;
 
@@ -43,6 +44,8 @@ public class Startup {
         } else {
             this.webhookEndpoint = webhookEndpoint;
         }
+
+        log.info("Using notification rules: {}", notifyRules);
     }
 
     @PostConstruct
