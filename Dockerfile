@@ -11,7 +11,7 @@ WORKDIR /opt/notify
 COPY --from=build /home/gradle/src/dependencies/ ./
 COPY --from=build /home/gradle/src/spring-boot-loader/ ./
 COPY --from=build /home/gradle/src/snapshot-dependencies/ ./
-COPY --from=build /home/gradle/src/application/ .
+COPY --from=build /home/gradle/src/application/ ./
 
 USER nonroot
 ARG VERSION=0.0.0
