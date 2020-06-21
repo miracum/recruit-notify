@@ -14,7 +14,6 @@ COPY --from=build /home/gradle/src/snapshot-dependencies/ ./
 COPY --from=build /home/gradle/src/application/ .
 
 USER nonroot
-COPY --from=build /home/gradle/src/build/libs/*.jar ./notify.jar
 ARG VERSION=0.0.0
 ENV NOTIFY_VERSION=${VERSION} \
     SPRING_PROFILES_ACTIVE="prod"
