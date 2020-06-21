@@ -47,7 +47,10 @@ public class Startup {
 
     @PostConstruct
     private void init() {
-        log.info("Creating subscription resource with criteria '{}'", criteria);
+        log.info("Creating subscription resource with criteria '{}' and webhook URL '{}' @ '{}'",
+                criteria,
+                webhookEndpoint,
+                fhirClient.getServerBase());
 
         retryTemplate.registerListener(new RetryListenerSupport() {
             @Override
