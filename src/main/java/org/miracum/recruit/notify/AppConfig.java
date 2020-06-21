@@ -4,6 +4,7 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,12 +20,18 @@ import java.util.HashMap;
 
 @Configuration
 public class AppConfig {
-    @Value("${retry.backoffPeriod}")
-    private int backoffPeriod;
-    @Value("${retry.maxAttempts}")
-    private int maxAttempts;
-    @Value("${fhir.url}")
-    private String fhirUrl;
+    private final long backoffPeriod;
+    private final int maxAttempts;
+    private final String fhirUrl;
+
+    @Autowired
+    public AppConfig(@Value("${notify.retry.backoffPeriodMs}") long backoffPeriodMs,
+                     @Value("${notify.retry.maxAttempts}") int maxAttempts,
+                     @Value("${fhir.url}") String fhirUrl) {
+        this.backoffPeriod = backoffPeriodMs;
+        this.maxAttempts = maxAttempts;
+        this.fhirUrl = fhirUrl;
+    }
 
     @Bean
     public RetryTemplate retryTemplate() {
