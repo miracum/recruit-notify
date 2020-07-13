@@ -25,7 +25,7 @@ services:
       - "2080:80"
 
   loader:
-    image: curlimages/curl:7.71.0
+    image: curlimages/curl:7.71.1
     command: >
       -X POST
       -H "Content-Type: application/json"
