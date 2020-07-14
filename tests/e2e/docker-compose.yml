@@ -15,7 +15,7 @@ services:
       - maildev
 
   tester:
-    image: curlimages/curl:7.71.0
+    image: curlimages/curl:7.71.1
     command: >
       -X GET
       --fail
