@@ -70,7 +70,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    public void onListChange_withEmptyRequestBody_shouldNotSendEmail() {
+    void onListChange_withEmptyRequestBody_shouldNotSendEmail() {
         var config = new NotificationRuleConfig();
         var sut = new NotificationController(config,
                 javaMailSender,
@@ -87,7 +87,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    public void onListChange_withMatchingNotificationRule_shouldSendEmail() {
+    void onListChange_withMatchingNotificationRule_shouldSendEmail() {
         List<MailNotificationRule> rules = List.of(new MailNotificationRule() {
             {
                 setAcronym("TEST");
@@ -115,7 +115,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    public void onListChange_withNoNotificationRule_shouldNotSendEmail() {
+    void onListChange_withNoNotificationRule_shouldNotSendEmail() {
         List<MailNotificationRule> rules = List.of(new MailNotificationRule() {
             {
                 setAcronym("NOT-TEST");
@@ -142,7 +142,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    public void onListChange_withWildCardReceiver_shouldSendEmails() {
+    void onListChange_withWildCardReceiver_shouldSendEmails() {
         List<MailNotificationRule> rules = List.of(new MailNotificationRule() {
             {
                 setAcronym("*");
@@ -171,7 +171,7 @@ class NotificationControllerTest {
     }
 
     @Test
-    public void onListChange_withNoCandidatesInList_shouldNotSendEmails() {
+    void onListChange_withNoCandidatesInList_shouldNotSendEmails() {
         var screeningList = new ListResource()
                 .setStatus(ListResource.ListStatus.CURRENT)
                 .setMode(ListResource.ListMode.WORKING);

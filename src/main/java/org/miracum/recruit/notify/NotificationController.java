@@ -179,40 +179,43 @@ public class NotificationController {
             return true;
         }
 
-        var newResearchSubjectIDs = getResearchSubjectIDs(newScreenList.getEntry());
-        var lastResearchSubjectIDs = getResearchSubjectIDs(lastScreenList.getEntry());
+        var newResearchSubjectIDs = getResearchSubjectIds(newScreenList.getEntry());
+        var lastResearchSubjectIDs = getResearchSubjectIds(lastScreenList.getEntry());
         return !newResearchSubjectIDs.equals(lastResearchSubjectIDs);
     }
 
-    private Set<String> getResearchSubjectIDs(List<ListResource.ListEntryComponent> entry) {
+    private Set<String> getResearchSubjectIds(List<ListResource.ListEntryComponent> entry) {
         return entry.stream()
                 .map(item -> item.getItem().getReferenceElement().getIdPart())
                 .collect(Collectors.toSet());
     }
 
     private void sendMail(MailNotificationRule rule, String studyAcronym, String listId) throws MessagingException {
-        var screeningListUrl = String.format(messageBodyScreeningListLinkTemplate, listId);
-
         var subject = String.format("MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die %s Studie",
                 studyAcronym);
 
-        // Prepare the evaluation context
-        var ctx = new Context();
-        ctx.setVariable("studyName", studyAcronym);
-        ctx.setVariable("screeningListUrl", screeningListUrl);
-
         // Prepare message using a Spring helper
-        var mimeMessage = this.mailSender.createMimeMessage();
-        var message = new MimeMessageHelper(mimeMessage, false, "UTF-8");
+        var mimeMessage = mailSender.createMimeMessage();
+        var message = new MimeMessageHelper(mimeMessage, true, "UTF-8");
         message.setSubject(subject);
         message.setFrom(rule.getFrom());
         message.setTo(rule.getTo().toArray(new String[0]));
 
-        // Create the HTML body using Thymeleaf
-        var htmlContent = this.templateEngine.process("notification-mail.html", ctx);
-        message.setText(htmlContent, true);
+        // Prepare the evaluation context
+        var screeningListUrl = String.format(messageBodyScreeningListLinkTemplate, listId);
 
-        // Send mail
+        var ctx = new Context();
+        ctx.setVariable("studyName", studyAcronym);
+        ctx.setVariable("screeningListUrl", screeningListUrl);
+
+        // render the messages using the Thymeleaf templating engine. This replaces
+        // the 'studyName' and 'screeningListUrl' placeholders inside the txt
+        // and html files.
+        var textContent = templateEngine.process("notification-mail.txt", ctx);
+        var htmlContent = templateEngine.process("notification-mail.html", ctx);
+
+        message.setText(textContent, htmlContent);
+
         this.mailSender.send(mimeMessage);
     }
 }
