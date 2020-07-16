@@ -1,3 +1,5 @@
+import com.github.spotbugs.snom.SpotBugsReport
+
 plugins {
     id "org.springframework.boot" version "2.3.1.RELEASE"
     id "io.spring.dependency-management" version "1.0.9.RELEASE"
@@ -35,9 +37,12 @@ dependencies {
     implementation "ca.uhn.hapi.fhir:hapi-fhir-client:5.0.2"
     implementation "ca.uhn.hapi.fhir:hapi-fhir-structures-r4:5.0.2"
     developmentOnly "org.springframework.boot:spring-boot-devtools:2.3.1.RELEASE"
+
     testImplementation("org.springframework.boot:spring-boot-starter-test:2.3.1.RELEASE") {
         exclude group: "org.junit.vintage", module: "junit-vintage-engine"
     }
+
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 }
 
 jacoco {
@@ -55,13 +60,13 @@ jacocoTestReport {
 }
 
 spotbugsMain {
-    reports {
+    reports(({
         html {
             enabled = true
-            destination = file("$buildDir/reports/spotbugs/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
+            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+            stylesheet = "fancy-hist.xsl"
         }
-    }
+    } as Closure<NamedDomainObjectContainer<? extends SpotBugsReport>>))
 }
 
 test {
@@ -70,4 +75,12 @@ test {
 
 bootJar {
     layered()
+}
+
+tasks.withType(Checkstyle) {
+    configFile = file(".checkstyle/checkstyle.xml")
+    reports {
+        xml.enabled false
+        html.enabled true
+    }
 }
