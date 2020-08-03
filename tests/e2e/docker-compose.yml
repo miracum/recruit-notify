@@ -29,7 +29,7 @@ services:
       - notify
 
   fhir:
-    image: docker.miracum.org/miracum-data/hapi-fhir-jpaserver:8.1.1
+    image: docker.miracum.org/miracum-data/hapi-fhir-jpaserver:v8.1.2
     environment:
       server.address.override: "http://fhir:8080/fhir"
 
