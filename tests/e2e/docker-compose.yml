@@ -9,7 +9,7 @@ services:
       SPRING_MAIL_HOST: maildev
       SPRING_MAIL_PORT: 25
       SPRING_MAIL_USERNAME: maildev
-      SPRING_MAIL_PASSWORD: maildev
+      SPRING_MAIL_PASSWORD: maildev # pragma: allowlist secret
     depends_on:
       - fhir
       - maildev

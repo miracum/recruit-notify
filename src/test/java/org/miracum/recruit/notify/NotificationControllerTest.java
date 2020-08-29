@@ -9,7 +9,6 @@ import org.hl7.fhir.r4.model.ResearchSubject;
 import org.hl7.fhir.r4.model.ResearchSubject.ResearchSubjectStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
 import org.miracum.recruit.notify.NotificationRuleConfig.MailNotificationRule;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -19,7 +18,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.thymeleaf.TemplateEngine;
 
 import javax.mail.Session;
@@ -29,7 +27,6 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(SpringJUnit4ClassRunner.class)
 class NotificationControllerTest {
     private static final String screeningListReferenceSystem = "http://miracum.org/fhir/screening-list-study-reference";
     @Mock
