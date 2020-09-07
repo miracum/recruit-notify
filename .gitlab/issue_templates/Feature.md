@@ -6,8 +6,5 @@
 ### Gewünschte Lösung
 <!--- Tell us what should happen -->
 
-### Detaillierte Beschreibung
-<!--- Provide a detailed description of the change or addition you are proposing -->
-
 ### Mögliche Implementierung
 <!--- Not obligatory, but suggest an idea for implementing addition or change -->
