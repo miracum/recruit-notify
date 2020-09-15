@@ -1,6 +1,12 @@
 package org.miracum.recruit.notify;
 
+import static java.util.stream.Collectors.toList;
+
 import ca.uhn.fhir.parser.IParser;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import javax.mail.MessagingException;
 import org.hl7.fhir.r4.model.ListResource;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ResearchSubject;
@@ -23,199 +29,203 @@ import org.springframework.web.bind.annotation.RestController;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import javax.mail.MessagingException;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
-
 @RestController
 public class NotificationController {
-    private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
 
-    private final NotificationRuleConfig config;
-    private final JavaMailSender mailSender;
-    private final RetryTemplate retryTemplate;
-    private final String screeningListReferenceSystem;
-    private final String messageBodyScreeningListLinkTemplate;
-    private final IParser fhirParser;
-    private final FhirServerProvider fhirServer;
-    private final TemplateEngine templateEngine;
+  private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
 
-    @Value("${fhir.systems.studyacronym}")
-    private String studyAcronymSystem;
+  private final NotificationRuleConfig config;
+  private final JavaMailSender mailSender;
+  private final RetryTemplate retryTemplate;
+  private final String screeningListReferenceSystem;
+  private final String messageBodyScreeningListLinkTemplate;
+  private final IParser fhirParser;
+  private final FhirServerProvider fhirServer;
+  private final TemplateEngine templateEngine;
 
-    @Autowired
-    public NotificationController(NotificationRuleConfig config,
-                                  JavaMailSender mailSender,
-                                  RetryTemplate retryTemplate,
-                                  IParser fhirParser,
-                                  @Value("${fhir.systems.screeninglistreference}") String screeningListReferenceSystem,
-                                  @Value("${notify.screeningListLinkTemplate}") String msg,
-                                  FhirServerProvider fhirServer,
-                                  TemplateEngine templateEngine) {
-        this.config = config;
-        this.mailSender = mailSender;
-        this.retryTemplate = retryTemplate;
-        this.screeningListReferenceSystem = screeningListReferenceSystem;
-        this.messageBodyScreeningListLinkTemplate = msg;
-        this.fhirParser = fhirParser;
-        this.fhirServer = fhirServer;
-        this.templateEngine = templateEngine;
+  @Value("${fhir.systems.studyacronym}")
+  private String studyAcronymSystem;
+
+  @Autowired
+  public NotificationController(
+      NotificationRuleConfig config,
+      JavaMailSender mailSender,
+      RetryTemplate retryTemplate,
+      IParser fhirParser,
+      @Value("${fhir.systems.screeninglistreference}") String screeningListReferenceSystem,
+      @Value("${notify.screeningListLinkTemplate}") String msg,
+      FhirServerProvider fhirServer,
+      TemplateEngine templateEngine) {
+    this.config = config;
+    this.mailSender = mailSender;
+    this.retryTemplate = retryTemplate;
+    this.screeningListReferenceSystem = screeningListReferenceSystem;
+    this.messageBodyScreeningListLinkTemplate = msg;
+    this.fhirParser = fhirParser;
+    this.fhirServer = fhirServer;
+    this.templateEngine = templateEngine;
+  }
+
+  @PutMapping(value = "/on-list-change/List/{id}", consumes = "application/fhir+json")
+  public void onListChange(
+      @PathVariable(value = "id") String resourceId, @RequestBody String body) {
+    log.info("onListChange invoked for list with id {}", resourceId);
+
+    if (body == null) {
+      log.error("request body is null");
+      return;
     }
 
-    @PutMapping(value = "/on-list-change/List/{id}", consumes = "application/fhir+json")
-    public void onListChange(@PathVariable(value = "id") String resourceId, @RequestBody String body) {
-        log.info("onListChange invoked for list with id {}", resourceId);
+    var list = fhirParser.parseResource(ListResource.class, body);
 
-        if (body == null) {
-            log.error("request body is null");
-            return;
-        }
+    if (!list.hasEntry()) {
+      log.warn("Received empty screening list {}, aborting.", list.getId());
+      return;
+    }
 
-        var list = fhirParser.parseResource(ListResource.class, body);
-
-        if (!list.hasEntry()) {
-            log.warn("Received empty screening list {}, aborting.", list.getId());
-            return;
-        }
-
-        retryTemplate.registerListener(new RetryListenerSupport() {
-            @Override
-            public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-                                                         Throwable throwable) {
-                log.warn("handleSubscription failed. {} attempt.", context.getRetryCount());
-            }
+    retryTemplate.registerListener(
+        new RetryListenerSupport() {
+          @Override
+          public <T, E extends Throwable> void onError(
+              RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
+            log.warn("handleSubscription failed. {} attempt.", context.getRetryCount());
+          }
         });
 
-        retryTemplate.execute(retryContext -> handleSubscription(list));
+    retryTemplate.execute(retryContext -> handleSubscription(list));
+  }
+
+  private Void handleSubscription(ListResource list) {
+    // get the ResearchStudy referenced by this changed screening list
+    var studyReferenceExtension = list.getExtensionByUrl(screeningListReferenceSystem);
+
+    if (studyReferenceExtension == null) {
+      log.warn(
+          "studyReferenceExtension not set for {}. Impossible to determine receiver, aborting.",
+          list.getId());
+      return null;
     }
 
-    private Void handleSubscription(ListResource list) {
-        // get the ResearchStudy referenced by this changed screening list
-        var studyReferenceExtension = list.getExtensionByUrl(screeningListReferenceSystem);
+    if (!hasPatientListChanged(list)) {
+      log.info("list {} hasn't changed since last time", list.getId());
+      return null;
+    }
 
-        if (studyReferenceExtension == null) {
-            log.warn("studyReferenceExtension not set for {}. Impossible to determine receiver, aborting.",
-                    list.getId());
-            return null;
-        }
+    var studyReference = (Reference) studyReferenceExtension.getValue();
 
-        if (!hasPatientListChanged(list)) {
-            log.info("list {} hasn't changed since last time", list.getId());
-            return null;
-        }
+    var researchSubjectList = fhirServer.getResearchSubjectsFromList(list);
+    if (!hasPatientListCandidate(researchSubjectList)) {
+      log.info("list {} doesn't have any candidates", list.getId());
+      return null;
+    }
 
-        var studyReference = (Reference) studyReferenceExtension.getValue();
+    var studyAcronym = "";
 
-        var researchSubjectList = fhirServer.getResearchSubjectsFromList(list);
-        if (!hasPatientListCandidate(researchSubjectList)) {
-            log.info("list {} doesn't have any candidates", list.getId());
-            return null;
-        }
+    if (studyReference.hasDisplay()) {
+      studyAcronym = studyReference.getDisplay();
+    } else {
+      var study =
+          fhirServer.getResearchStudyFromId(studyReference.getReferenceElement().getIdPart());
 
-        var studyAcronym = "";
-
-        if (studyReference.hasDisplay()) {
-            studyAcronym = studyReference.getDisplay();
+      if (study.hasExtension(studyAcronymSystem)) {
+        var studyAcronymExtension = study.getExtensionByUrl(studyAcronymSystem);
+        studyAcronym = studyAcronymExtension.getValue().toString();
+        log.info(
+            "Using acronym '{}' from extension as study identifier for {}.",
+            studyAcronym,
+            studyReference.getReference());
+      } else {
+        log.warn("Study acronym not set for study {}.", studyReference.getReference());
+        if (study.hasTitle()) {
+          studyAcronym = study.getTitle();
+          log.info(
+              "Using title '{}' as study identifier for {}.",
+              studyAcronym,
+              studyReference.getReference());
         } else {
-            var study = fhirServer.getResearchStudyFromId(studyReference.getReferenceElement().getIdPart());
-
-            if (study.hasExtension(studyAcronymSystem)) {
-                var studyAcronymExtension = study.getExtensionByUrl(studyAcronymSystem);
-                studyAcronym = studyAcronymExtension.getValue().toString();
-                log.info("Using acronym '{}' from extension as study identifier for {}.",
-                        studyAcronym,
-                        studyReference.getReference());
-            } else {
-                log.warn("Study acronym not set for study {}.", studyReference.getReference());
-                if (study.hasTitle()) {
-                    studyAcronym = study.getTitle();
-                    log.info("Using title '{}' as study identifier for {}.",
-                            studyAcronym,
-                            studyReference.getReference());
-                } else {
-                    log.error("No identifier available for study {}. Aborting.", studyReference.getReference());
-                    return null;
-                }
-            }
+          log.error(
+              "No identifier available for study {}. Aborting.", studyReference.getReference());
+          return null;
         }
-
-        final var acronym = studyAcronym;
-
-        // finds all matching entries in the configuration. An entry matches if either
-        // the acronym is equal to this changed study's one or if its a wildcard ('*') receiver.
-        var matchingRules = config.getMail().stream()
-                .filter(rule -> rule.getAcronym().equals(acronym) || rule.getAcronym().equals("*"))
-                .collect(toList());
-
-        if (matchingRules.isEmpty()) {
-            log.warn("No matching notification rules found for {}", studyAcronym);
-            return null;
-        }
-
-        for (var matchingRule : matchingRules) {
-            log.info("{} matched. Sending mail to {}", studyAcronym, matchingRule.getTo());
-            try {
-                sendMail(matchingRule, studyAcronym, list.getIdElement().getIdPart());
-            } catch (MessagingException e) {
-                log.error("Failed to render notification email", e);
-            }
-        }
-
-        return null;
+      }
     }
 
-    private boolean hasPatientListCandidate(List<ResearchSubject> researchSubjects) {
-        return researchSubjects
-                .stream()
-                .anyMatch(subject -> subject.getStatus() == ResearchSubjectStatus.CANDIDATE);
+    final var acronym = studyAcronym;
+
+    // finds all matching entries in the configuration. An entry matches if either
+    // the acronym is equal to this changed study's one or if its a wildcard ('*') receiver.
+    var matchingRules =
+        config.getMail().stream()
+            .filter(rule -> rule.getAcronym().equals(acronym) || rule.getAcronym().equals("*"))
+            .collect(toList());
+
+    if (matchingRules.isEmpty()) {
+      log.warn("No matching notification rules found for {}", studyAcronym);
+      return null;
     }
 
-    private boolean hasPatientListChanged(ListResource newScreenList) {
-        var lastScreenList = fhirServer.getPreviousScreeningListFromServer(newScreenList);
-        if (lastScreenList == null) {
-            return true;
-        }
-
-        var newResearchSubjectIDs = getResearchSubjectIds(newScreenList.getEntry());
-        var lastResearchSubjectIDs = getResearchSubjectIds(lastScreenList.getEntry());
-        return !newResearchSubjectIDs.equals(lastResearchSubjectIDs);
+    for (var matchingRule : matchingRules) {
+      log.info("{} matched. Sending mail to {}", studyAcronym, matchingRule.getTo());
+      try {
+        sendMail(matchingRule, studyAcronym, list.getIdElement().getIdPart());
+      } catch (MessagingException e) {
+        log.error("Failed to render notification email", e);
+      }
     }
 
-    private Set<String> getResearchSubjectIds(List<ListResource.ListEntryComponent> entry) {
-        return entry.stream()
-                .map(item -> item.getItem().getReferenceElement().getIdPart())
-                .collect(Collectors.toSet());
+    return null;
+  }
+
+  private boolean hasPatientListCandidate(List<ResearchSubject> researchSubjects) {
+    return researchSubjects.stream()
+        .anyMatch(subject -> subject.getStatus() == ResearchSubjectStatus.CANDIDATE);
+  }
+
+  private boolean hasPatientListChanged(ListResource newScreenList) {
+    var lastScreenList = fhirServer.getPreviousScreeningListFromServer(newScreenList);
+    if (lastScreenList == null) {
+      return true;
     }
 
-    private void sendMail(MailNotificationRule rule, String studyAcronym, String listId) throws MessagingException {
-        var subject = String.format("MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die %s Studie",
-                studyAcronym);
+    var newResearchSubjectIDs = getResearchSubjectIds(newScreenList.getEntry());
+    var lastResearchSubjectIDs = getResearchSubjectIds(lastScreenList.getEntry());
+    return !newResearchSubjectIDs.equals(lastResearchSubjectIDs);
+  }
 
-        // Prepare message using a Spring helper
-        var mimeMessage = mailSender.createMimeMessage();
-        var message = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-        message.setSubject(subject);
-        message.setFrom(rule.getFrom());
-        message.setTo(rule.getTo().toArray(new String[0]));
+  private Set<String> getResearchSubjectIds(List<ListResource.ListEntryComponent> entry) {
+    return entry.stream()
+        .map(item -> item.getItem().getReferenceElement().getIdPart())
+        .collect(Collectors.toSet());
+  }
 
-        // Prepare the evaluation context
-        var screeningListUrl = String.format(messageBodyScreeningListLinkTemplate, listId);
+  private void sendMail(MailNotificationRule rule, String studyAcronym, String listId)
+      throws MessagingException {
+    var subject =
+        String.format(
+            "MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die %s Studie", studyAcronym);
 
-        var ctx = new Context();
-        ctx.setVariable("studyName", studyAcronym);
-        ctx.setVariable("screeningListUrl", screeningListUrl);
+    // Prepare message using a Spring helper
+    var mimeMessage = mailSender.createMimeMessage();
+    var message = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+    message.setSubject(subject);
+    message.setFrom(rule.getFrom());
+    message.setTo(rule.getTo().toArray(new String[0]));
 
-        // render the messages using the Thymeleaf templating engine. This replaces
-        // the 'studyName' and 'screeningListUrl' placeholders inside the txt
-        // and html files.
-        var textContent = templateEngine.process("notification-mail.txt", ctx);
-        var htmlContent = templateEngine.process("notification-mail.html", ctx);
+    // Prepare the evaluation context
+    var screeningListUrl = String.format(messageBodyScreeningListLinkTemplate, listId);
 
-        message.setText(textContent, htmlContent);
+    var ctx = new Context();
+    ctx.setVariable("studyName", studyAcronym);
+    ctx.setVariable("screeningListUrl", screeningListUrl);
 
-        this.mailSender.send(mimeMessage);
-    }
+    // render the messages using the Thymeleaf templating engine. This replaces
+    // the 'studyName' and 'screeningListUrl' placeholders inside the txt
+    // and html files.
+    var textContent = templateEngine.process("notification-mail.txt", ctx);
+    var htmlContent = templateEngine.process("notification-mail.html", ctx);
+
+    message.setText(textContent, htmlContent);
+
+    this.mailSender.send(mimeMessage);
+  }
 }

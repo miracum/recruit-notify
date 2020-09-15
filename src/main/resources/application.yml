@@ -18,9 +18,8 @@ management:
   endpoint:
     health:
       show-details: always
-  health:
-    probes:
-      enabled: true
+      probes:
+        enabled: true
   endpoints:
     web:
       exposure:

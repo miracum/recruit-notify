@@ -2,6 +2,8 @@ package org.miracum.recruit.notify;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.util.BundleUtil;
+import java.util.ArrayList;
+import java.util.List;
 import org.hl7.fhir.instance.model.api.IAnyResource;
 import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
@@ -14,69 +16,65 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Service
 public class FhirServerProvider {
-    private static final Logger log = LoggerFactory.getLogger(FhirServerProvider.class);
 
-    private final IGenericClient fhirClient;
+  private static final Logger log = LoggerFactory.getLogger(FhirServerProvider.class);
 
-    @Autowired
-    public FhirServerProvider(IGenericClient fhirClient) {
-        this.fhirClient = fhirClient;
+  private final IGenericClient fhirClient;
+
+  @Autowired
+  public FhirServerProvider(IGenericClient fhirClient) {
+    this.fhirClient = fhirClient;
+  }
+
+  public ListResource getPreviousScreeningListFromServer(ListResource currentList) {
+    var versionId = currentList.getMeta().getVersionId();
+
+    if (versionId == null) {
+      log.warn("list {} version id is null", currentList.getId());
+      return null;
     }
 
-    public ListResource getPreviousScreeningListFromServer(ListResource currentList) {
-        var versionId = currentList.getMeta().getVersionId();
-
-        if (versionId == null) {
-            log.warn("list {} version id is null", currentList.getId());
-            return null;
-        }
-
-        int lastVersionId = Integer.parseInt(versionId) - 1;
-        if (lastVersionId <= 0) {
-            return null;
-        }
-
-        return fhirClient.read()
-                .resource(ListResource.class)
-                .withIdAndVersion(currentList.getIdElement().getIdPart(), Integer.toString(lastVersionId))
-                .execute();
+    int lastVersionId = Integer.parseInt(versionId) - 1;
+    if (lastVersionId <= 0) {
+      return null;
     }
 
-    public List<ResearchSubject> getResearchSubjectsFromList(ListResource list) {
-        var listBundle = fhirClient.search()
-                .forResource(ListResource.class)
-                .where(IAnyResource.RES_ID.exactly().identifier(list.getId()))
-                .include(IBaseResource.INCLUDE_ALL)
-                .returnBundle(Bundle.class)
-                .execute();
+    return fhirClient
+        .read()
+        .resource(ListResource.class)
+        .withIdAndVersion(currentList.getIdElement().getIdPart(), Integer.toString(lastVersionId))
+        .execute();
+  }
 
-        var researchSubjectList = new ArrayList<>(BundleUtil.toListOfResourcesOfType(fhirClient.getFhirContext(),
-                listBundle,
-                ResearchSubject.class));
+  public List<ResearchSubject> getResearchSubjectsFromList(ListResource list) {
+    var listBundle =
+        fhirClient
+            .search()
+            .forResource(ListResource.class)
+            .where(IAnyResource.RES_ID.exactly().identifier(list.getId()))
+            .include(IBaseResource.INCLUDE_ALL)
+            .returnBundle(Bundle.class)
+            .execute();
 
-        // Load the subsequent pages
-        while (listBundle.getLink(IBaseBundle.LINK_NEXT) != null) {
-            listBundle = fhirClient
-                    .loadPage()
-                    .next(listBundle)
-                    .execute();
-            researchSubjectList.addAll(BundleUtil.toListOfResourcesOfType(fhirClient.getFhirContext(),
-                    listBundle,
-                    ResearchSubject.class));
-        }
+    var researchSubjectList =
+        new ArrayList<>(
+            BundleUtil.toListOfResourcesOfType(
+                fhirClient.getFhirContext(), listBundle, ResearchSubject.class));
 
-        return researchSubjectList;
+    // Load the subsequent pages
+    while (listBundle.getLink(IBaseBundle.LINK_NEXT) != null) {
+      listBundle = fhirClient.loadPage().next(listBundle).execute();
+      researchSubjectList.addAll(
+          BundleUtil.toListOfResourcesOfType(
+              fhirClient.getFhirContext(), listBundle, ResearchSubject.class));
     }
 
-    public ResearchStudy getResearchStudyFromId(String id) {
-        return fhirClient.read()
-                .resource(ResearchStudy.class)
-                .withId(id)
-                .execute();
-    }
+    return researchSubjectList;
+  }
+
+  public ResearchStudy getResearchStudyFromId(String id) {
+    return fhirClient.read().resource(ResearchStudy.class).withId(id).execute();
+  }
 }

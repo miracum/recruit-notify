@@ -4,6 +4,7 @@ import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
+import java.util.HashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -16,58 +17,58 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.spring5.SpringTemplateEngine;
 
-import java.util.HashMap;
-
 @Configuration
 public class AppConfig {
-    private final long backoffPeriod;
-    private final int maxAttempts;
-    private final String fhirUrl;
 
-    @Autowired
-    public AppConfig(@Value("${notify.retry.backoffPeriodMs}") long backoffPeriodMs,
-                     @Value("${notify.retry.maxAttempts}") int maxAttempts,
-                     @Value("${fhir.url}") String fhirUrl) {
-        this.backoffPeriod = backoffPeriodMs;
-        this.maxAttempts = maxAttempts;
-        this.fhirUrl = fhirUrl;
-    }
+  private final long backoffPeriod;
+  private final int maxAttempts;
+  private final String fhirUrl;
 
-    @Bean
-    public RetryTemplate retryTemplate() {
-        var retryTemplate = new RetryTemplate();
+  @Autowired
+  public AppConfig(
+      @Value("${notify.retry.backoffPeriodMs}") long backoffPeriodMs,
+      @Value("${notify.retry.maxAttempts}") int maxAttempts,
+      @Value("${fhir.url}") String fhirUrl) {
+    this.backoffPeriod = backoffPeriodMs;
+    this.maxAttempts = maxAttempts;
+    this.fhirUrl = fhirUrl;
+  }
 
-        var fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(backoffPeriod);
-        retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
+  @Bean
+  public RetryTemplate retryTemplate() {
+    var retryTemplate = new RetryTemplate();
 
-        var retryableExceptions = new HashMap<Class<? extends Throwable>, Boolean>();
-        retryableExceptions.put(HttpClientErrorException.class, false);
-        retryableExceptions.put(HttpServerErrorException.class, true);
-        retryableExceptions.put(FhirClientConnectionException.class, true);
+    var fixedBackOffPolicy = new FixedBackOffPolicy();
+    fixedBackOffPolicy.setBackOffPeriod(backoffPeriod);
+    retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
 
-        retryTemplate.setRetryPolicy(new SimpleRetryPolicy(maxAttempts, retryableExceptions));
+    var retryableExceptions = new HashMap<Class<? extends Throwable>, Boolean>();
+    retryableExceptions.put(HttpClientErrorException.class, false);
+    retryableExceptions.put(HttpServerErrorException.class, true);
+    retryableExceptions.put(FhirClientConnectionException.class, true);
 
-        return retryTemplate;
-    }
+    retryTemplate.setRetryPolicy(new SimpleRetryPolicy(maxAttempts, retryableExceptions));
 
-    @Bean
-    public IParser fhirParser(FhirContext ctx) {
-        return ctx.newJsonParser();
-    }
+    return retryTemplate;
+  }
 
-    @Bean
-    public FhirContext fhirContext() {
-        return FhirContext.forR4();
-    }
+  @Bean
+  public IParser fhirParser(FhirContext ctx) {
+    return ctx.newJsonParser();
+  }
 
-    @Bean
-    public IGenericClient fhirClient(FhirContext fhirContext) {
-        return fhirContext.newRestfulGenericClient(fhirUrl);
-    }
+  @Bean
+  public FhirContext fhirContext() {
+    return FhirContext.forR4();
+  }
 
-    @Bean
-    public TemplateEngine emailTemplateEngine() {
-        return new SpringTemplateEngine();
-    }
+  @Bean
+  public IGenericClient fhirClient(FhirContext fhirContext) {
+    return fhirContext.newRestfulGenericClient(fhirUrl);
+  }
+
+  @Bean
+  public TemplateEngine emailTemplateEngine() {
+    return new SpringTemplateEngine();
+  }
 }

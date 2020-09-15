@@ -10,22 +10,21 @@ import org.springframework.stereotype.Component;
 @Component
 public class FhirServerHealthCheck implements HealthIndicator {
 
-    private final IGenericClient fhirClient;
+  private final IGenericClient fhirClient;
 
-    @Autowired
-    public FhirServerHealthCheck(IGenericClient fhirClient) {
-        this.fhirClient = fhirClient;
+  @Autowired
+  public FhirServerHealthCheck(IGenericClient fhirClient) {
+    this.fhirClient = fhirClient;
+  }
+
+  @Override
+  public Health health() {
+    try {
+      fhirClient.capabilities().ofType(CapabilityStatement.class).execute();
+    } catch (Exception exc) {
+      return Health.down().withDetail("Error Message", exc.getMessage()).build();
     }
 
-    @Override
-    public Health health() {
-        try {
-            fhirClient.capabilities().ofType(CapabilityStatement.class).execute();
-        } catch (Exception exc) {
-            return Health.down()
-                    .withDetail("Error Message", exc.getMessage()).build();
-        }
-
-        return Health.up().build();
-    }
+    return Health.up().build();
+  }
 }
