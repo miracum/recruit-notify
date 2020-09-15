@@ -5,6 +5,7 @@ plugins {
     id "java"
     id "checkstyle"
     id "jacoco"
+    id "com.diffplug.spotless" version "5.5.1"
 }
 
 group = "org.miracum.recruit"
@@ -75,10 +76,15 @@ bootJar {
     layered()
 }
 
-tasks.withType(Checkstyle) {
+checkstyle {
+    toolVersion '8.29'
     configFile = file(".checkstyle/checkstyle.xml")
-    reports {
-        xml.enabled false
-        html.enabled true
+}
+
+spotless {
+    java {
+        importOrder()
+        removeUnusedImports()
+        googleJavaFormat()
     }
 }
