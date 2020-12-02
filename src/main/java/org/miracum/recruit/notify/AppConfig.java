@@ -1,8 +1,5 @@
 package org.miracum.recruit.notify;
 
-import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.parser.IParser;
-import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import java.util.HashMap;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,26 +11,22 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.spring5.SpringTemplateEngine;
 
+/** Configure backoffPeriod and maxAttempts for application. */
 @Configuration
 public class AppConfig {
-
   private final long backoffPeriod;
   private final int maxAttempts;
-  private final String fhirUrl;
 
   @Autowired
   public AppConfig(
       @Value("${notify.retry.backoffPeriodMs}") long backoffPeriodMs,
-      @Value("${notify.retry.maxAttempts}") int maxAttempts,
-      @Value("${fhir.url}") String fhirUrl) {
+      @Value("${notify.retry.maxAttempts}") int maxAttempts) {
     this.backoffPeriod = backoffPeriodMs;
     this.maxAttempts = maxAttempts;
-    this.fhirUrl = fhirUrl;
   }
 
+  /** RetryTemplate. */
   @Bean
   public RetryTemplate retryTemplate() {
     var retryTemplate = new RetryTemplate();
@@ -50,25 +43,5 @@ public class AppConfig {
     retryTemplate.setRetryPolicy(new SimpleRetryPolicy(maxAttempts, retryableExceptions));
 
     return retryTemplate;
-  }
-
-  @Bean
-  public IParser fhirParser(FhirContext ctx) {
-    return ctx.newJsonParser();
-  }
-
-  @Bean
-  public FhirContext fhirContext() {
-    return FhirContext.forR4();
-  }
-
-  @Bean
-  public IGenericClient fhirClient(FhirContext fhirContext) {
-    return fhirContext.newRestfulGenericClient(fhirUrl);
-  }
-
-  @Bean
-  public TemplateEngine emailTemplateEngine() {
-    return new SpringTemplateEngine();
   }
 }

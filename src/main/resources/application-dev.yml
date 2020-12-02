@@ -1,26 +1,59 @@
 notify:
-  screeningListLinkTemplate: "http://localhost:8083/recommendations/%s"
+  version: 0.0.0-dev
+  retry:
+    backoffPeriodMs: 10000
+    maxAttempts: 10
+  mailer:
+    from: "noreply@example.com"
+    linktemplate: "http://localhost:8083/recommendations/[list_id]"
+    subject: "MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die Studie [study_acronym]"
   rules:
-    mail:
-      - acronym: "PROSa"
-        from: "hello@example.com"
-        to:
-          - "a@example.com"
-          - "b@example.com"
-      - acronym: "AMICA"
-        from: "world@example.com"
-        to:
-          - "c@example.com"
+    schedules:
+      everyMorning: "0 0 8 1/1 * ? *"
+      everyMonday: "0 0 8 ? * MON *"
+      everyHour: "0 0 0/1 1/1 * ? *"
+      everyFiveMinutes: "0 0/5 * 1/1 * ? *"
+      every5Minutes: "0 0/5 * 1/1 * ? *"
+
+    trials:
       - acronym: "*"
-        from: "me@example.com"
-        to:
-          - "catchall@example.com"
+        subscriptions:
+          - email: "everything@example.com"
+      - acronym: "PROSa"
+        subscriptions:
+          - email: "everyMorning@example.com"
+            notify: "everyMorning"
+          - email: "everyMinute@example.com"
+            notify: "everyMinute"
+          - email: "everyHour@example.com"
+            notify: "everyHour"
+            # a lack of a notify element means the user will be notified immediately.
+          - email: "immediately-prosa@example.com"
+        allowed:
+          groups:
+            - "diz-uc1"
+          users:
+            - "you@example.com"
+      - acronym: "AMICA"
+        subscriptions:
+          - email: "immediately-amica@example.com"
+          - email: "everyHour1@example.com"
+            notify: "everyHour"
+          - email: "everyHour2@example.com"
+            notify: "everyHour"
+          - email: "everyFiveMinutes@example.com"
+            notify: "everyFiveMinutes"
+        allowed:
+          groups:
+            - "diz-uc1"
+          users:
+            - "you@example.com"
 spring:
   mail:
     host: localhost
     port: 3025
-    username: user
-    password: pass
+    username: noreply@test.de
+    password: ""
     properties:
       mail:
         debug: true
@@ -30,3 +63,11 @@ webhook:
 
 fhir:
   url: "http://localhost:8082/fhir"
+
+logging:
+  level:
+    root: WARN
+    org:
+      miracum:
+        recruit:
+          notify: TRACE

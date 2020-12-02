@@ -2,25 +2,25 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v3.3.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
         args: [--allow-multiple-documents]
       - id: check-added-large-files
-      - id: check-byte-order-marker
+      - id: fix-byte-order-marker
       - id: check-case-conflict
       - id: check-executables-have-shebangs
       - id: check-json
   - repo: https://github.com/jorisroovers/gitlint
-    rev: 6a37bae08e7badb4f38faa75ec643698d2a41b40
+    rev: v0.15.0
     hooks:
       - id: gitlint
         stages: [commit-msg]
         entry: gitlint
         args: [--contrib=CT1, --ignore=body-is-missing, --msg-filename]
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v0.14.2
+    rev: v0.14.3
     hooks:
       - id: detect-secrets
