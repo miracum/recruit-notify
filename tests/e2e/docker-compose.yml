@@ -10,12 +10,14 @@ services:
       SPRING_MAIL_PORT: 25
       SPRING_MAIL_USERNAME: maildev
       SPRING_MAIL_PASSWORD: maildev # pragma: allowlist secret
+    volumes:
+      - ./rules.yaml:/opt/notify/config/application.yaml:ro
     depends_on:
       - fhir
       - maildev
 
   tester:
-    image: curlimages/curl:7.72.0
+    image: curlimages/curl:7.73.0
     command: >
       -X GET
       --fail

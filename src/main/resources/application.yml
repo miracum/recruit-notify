@@ -1,3 +1,29 @@
+notify:
+  version: 0.0.0-dev
+  retry:
+    backoffPeriodMs: 10000
+    maxAttempts: 10
+  mailer:
+    from: "rekrutierungsvorschlag@miracum.org"
+    link-template: "http://replace-host-name:8083/recommendations/[list_id]"
+    subject: "MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die Studie [study_acronym]"
+  rules: {}
+
+spring:
+  mail:
+    host:
+    port: 25
+    username:
+    password:
+    properties:
+      mail:
+        debug: true
+  profiles:
+    active: dev
+
+webhook:
+  endpoint: "http://host.docker.internal:8080/on-list-change"
+
 fhir:
   url: ""
   subscription:
@@ -5,14 +31,11 @@ fhir:
   systems:
     screeninglistReference: "https://fhir.miracum.org/uc1/StructureDefinition/belongsToStudy"
     studyAcronym: "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym"
-
-webhook:
-  endpoint: "http://localhost:8080/on-list-change"
-
-spring:
-  mail: {}
-  profiles:
-    active: dev
+    subscriberSystem: "https://fhir.miracum.org/uc1/NamingSystem/notificationSubscriberId"
+    communication: "https://fhir.miracum.org/uc1/NamingSystem/notificationId"
+  communication:
+    payloadText: "Notify: Temporary Stored Message"
+    systemValue: "MIRACUM Notify"
 
 management:
   endpoint:
@@ -24,12 +47,3 @@ management:
     web:
       exposure:
         include: "*"
-
-notify:
-  screeningListLinkTemplate: ""
-  rules:
-    mail: []
-  version: 0.0.0-dev
-  retry:
-    backoffPeriodMs: 10000
-    maxAttempts: 10

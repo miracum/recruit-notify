@@ -7,13 +7,14 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
 
+/** Fhir Server Health Check Indicator. */
 @Component
 public class FhirServerHealthCheck implements HealthIndicator {
 
   private final IGenericClient fhirClient;
 
   @Autowired
-  public FhirServerHealthCheck(IGenericClient fhirClient) {
+  FhirServerHealthCheck(IGenericClient fhirClient) {
     this.fhirClient = fhirClient;
   }
 
