@@ -22,7 +22,3 @@ notifications:
           - diz-uc1
         users:
           - you@example.com
-spring:
-  config:
-    activate:
-      on-profile: test
