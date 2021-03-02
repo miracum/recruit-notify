@@ -16,6 +16,7 @@ import org.hl7.fhir.r4.model.Practitioner;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ResearchStudy;
 import org.hl7.fhir.r4.model.ResearchSubject;
+import org.miracum.recruit.notify.config.FhirConfig;
 import org.miracum.recruit.notify.fhirserver.FhirSystemsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,14 +28,13 @@ import org.springframework.stereotype.Service;
 public class FhirServerProvider {
   private static final Logger LOG = LoggerFactory.getLogger(FhirServerProvider.class);
 
-  private final ConfigFhirServer configFhirServer;
+  private final FhirConfig fhirConfig;
   private final FhirSystemsConfig fhirSystemsConfig;
 
   /** Constructor for Fhir Server providing search results. */
   @Autowired
-  public FhirServerProvider(
-      ConfigFhirServer configFhirServer, FhirSystemsConfig fhirSystemsConfig) {
-    this.configFhirServer = configFhirServer;
+  public FhirServerProvider(FhirConfig fhirConfig, FhirSystemsConfig fhirSystemsConfig) {
+    this.fhirConfig = fhirConfig;
     this.fhirSystemsConfig = fhirSystemsConfig;
   }
 
@@ -52,7 +52,7 @@ public class FhirServerProvider {
       return null;
     }
 
-    return configFhirServer
+    return fhirConfig
         .getFhirClient()
         .read()
         .resource(ListResource.class)
@@ -63,7 +63,7 @@ public class FhirServerProvider {
   /** Query all research subjects from list. */
   public List<ResearchSubject> getResearchSubjectsFromList(ListResource list) {
     var listBundle =
-        configFhirServer
+        fhirConfig
             .getFhirClient()
             .search()
             .forResource(ListResource.class)
@@ -75,18 +75,14 @@ public class FhirServerProvider {
     var researchSubjectList =
         new ArrayList<>(
             BundleUtil.toListOfResourcesOfType(
-                configFhirServer.getFhirClient().getFhirContext(),
-                listBundle,
-                ResearchSubject.class));
+                fhirConfig.getFhirClient().getFhirContext(), listBundle, ResearchSubject.class));
 
     // Load the subsequent pages
     while (listBundle.getLink(IBaseBundle.LINK_NEXT) != null) {
-      listBundle = configFhirServer.getFhirClient().loadPage().next(listBundle).execute();
+      listBundle = fhirConfig.getFhirClient().loadPage().next(listBundle).execute();
       researchSubjectList.addAll(
           BundleUtil.toListOfResourcesOfType(
-              configFhirServer.getFhirClient().getFhirContext(),
-              listBundle,
-              ResearchSubject.class));
+              fhirConfig.getFhirClient().getFhirContext(), listBundle, ResearchSubject.class));
     }
 
     return researchSubjectList;
@@ -94,12 +90,7 @@ public class FhirServerProvider {
 
   /** Query research study resource from target fhir server by given id. */
   public ResearchStudy getResearchStudyFromId(String id) {
-    return configFhirServer
-        .getFhirClient()
-        .read()
-        .resource(ResearchStudy.class)
-        .withId(id)
-        .execute();
+    return fhirConfig.getFhirClient().read().resource(ResearchStudy.class).withId(id).execute();
   }
 
   /**
@@ -115,7 +106,7 @@ public class FhirServerProvider {
       LOG.debug("subscriber name: {}", subscriberName);
 
       Bundle listBundlePractitioners =
-          configFhirServer
+          fhirConfig
               .getFhirClient()
               .search()
               .forResource(Practitioner.class)
@@ -128,7 +119,7 @@ public class FhirServerProvider {
 
       List<Practitioner> practitionerList =
           BundleUtil.toListOfResourcesOfType(
-              configFhirServer.getFhirClient().getFhirContext(),
+              fhirConfig.getFhirClient().getFhirContext(),
               listBundlePractitioners,
               Practitioner.class);
 
@@ -155,7 +146,7 @@ public class FhirServerProvider {
 
     // TODO: refactor to use getCommunicationRequestsByStatus (with optional include)
     Bundle listBundleCommunications =
-        configFhirServer
+        fhirConfig
             .getFhirClient()
             .search()
             .forResource(CommunicationRequest.class)
@@ -172,7 +163,7 @@ public class FhirServerProvider {
 
     List<CommunicationRequest> communicationList =
         BundleUtil.toListOfResourcesOfType(
-            configFhirServer.getFhirClient().getFhirContext(),
+            fhirConfig.getFhirClient().getFhirContext(),
             listBundleCommunications,
             CommunicationRequest.class);
 
@@ -221,7 +212,7 @@ public class FhirServerProvider {
     LOG.info("retrieve communication requests with status={} from server", status);
 
     var listBundleCommunications =
-        configFhirServer
+        fhirConfig
             .getFhirClient()
             .search()
             .forResource(CommunicationRequest.class)
@@ -235,7 +226,7 @@ public class FhirServerProvider {
 
     var communicationList =
         BundleUtil.toListOfResourcesOfType(
-            configFhirServer.getFhirClient().getFhirContext(),
+            fhirConfig.getFhirClient().getFhirContext(),
             listBundleCommunications,
             CommunicationRequest.class);
 

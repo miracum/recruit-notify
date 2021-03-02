@@ -7,6 +7,7 @@ import org.hl7.fhir.r4.model.ListResource;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ResearchSubject;
 import org.hl7.fhir.r4.model.ResearchSubject.ResearchSubjectStatus;
+import org.miracum.recruit.notify.config.FhirConfig;
 import org.miracum.recruit.notify.logging.LogMethodCalls;
 import org.miracum.recruit.notify.message.create.MessageCreator;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ public class NotificationController {
 
   final FhirServerProvider fhirServer;
 
-  final ConfigFhirServer configFhirServer;
+  final FhirConfig fhirConfig;
 
   @Value("${fhir.systems.studyacronym}")
   private String studyAcronymSystem;
@@ -50,12 +51,12 @@ public class NotificationController {
   public NotificationController(
       RetryTemplate retryTemplate,
       @Value("${fhir.systems.screeninglistreference}") String screeningListReferenceSystem,
-      ConfigFhirServer configFhirServer,
+      FhirConfig fhirConfig,
       FhirServerProvider fhirServer,
       MessageCreator messageCreator) {
     this.retryTemplate = retryTemplate;
     this.screeningListReferenceSystem = screeningListReferenceSystem;
-    this.configFhirServer = configFhirServer;
+    this.fhirConfig = fhirConfig;
     this.fhirServer = fhirServer;
     this.messageCreator = messageCreator;
   }
@@ -74,7 +75,7 @@ public class NotificationController {
       return;
     }
 
-    var list = configFhirServer.getFhirParser().parseResource(ListResource.class, body);
+    var list = fhirConfig.getFhirParser().parseResource(ListResource.class, body);
 
     if (!list.hasEntry()) {
       LOG.warn("Received empty screening list {}, aborting.", list.getId());

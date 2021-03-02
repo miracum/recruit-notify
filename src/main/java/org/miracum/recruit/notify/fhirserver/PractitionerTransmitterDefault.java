@@ -4,7 +4,7 @@ import java.util.List;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Practitioner;
-import org.miracum.recruit.notify.ConfigFhirServer;
+import org.miracum.recruit.notify.config.FhirConfig;
 import org.miracum.recruit.notify.logging.LogMethodCalls;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,16 +17,15 @@ public class PractitionerTransmitterDefault {
 
   private static final Logger LOG = LoggerFactory.getLogger(PractitionerTransmitterDefault.class);
 
-  final ConfigFhirServer configFhirServer;
+  final FhirConfig fhirConfig;
 
   final FhirSystemsConfig fhirSystemConfig;
 
   /** Init instance with config fhir server and fhir system config. */
   @Autowired
-  public PractitionerTransmitterDefault(
-      ConfigFhirServer configFhirServer, FhirSystemsConfig fhirSystemConfig) {
+  public PractitionerTransmitterDefault(FhirConfig fhirConfig, FhirSystemsConfig fhirSystemConfig) {
 
-    this.configFhirServer = configFhirServer;
+    this.fhirConfig = fhirConfig;
     this.fhirSystemConfig = fhirSystemConfig;
   }
 
@@ -61,6 +60,6 @@ public class PractitionerTransmitterDefault {
       }
     }
 
-    return configFhirServer.getFhirClient().transaction().withBundle(bundle).execute();
+    return fhirConfig.getFhirClient().transaction().withBundle(bundle).execute();
   }
 }

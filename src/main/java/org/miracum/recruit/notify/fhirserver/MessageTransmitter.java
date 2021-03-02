@@ -6,7 +6,7 @@ import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CommunicationRequest;
 import org.hl7.fhir.r4.model.CommunicationRequest.CommunicationRequestPayloadComponent;
 import org.hl7.fhir.r4.model.StringType;
-import org.miracum.recruit.notify.ConfigFhirServer;
+import org.miracum.recruit.notify.config.FhirConfig;
 import org.miracum.recruit.notify.logging.LogMethodCalls;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,16 +21,16 @@ public class MessageTransmitter {
   private static final Logger LOG = LoggerFactory.getLogger(MessageTransmitter.class);
   private final RetryTemplate retryTemplate;
 
-  final ConfigFhirServer configFhirServer;
+  final FhirConfig fhirConfig;
   final FhirCommunicationConfig fhirCommunicationConfig;
 
   /** Prepare config items used to send communciation requests to target fhir server. */
   @Autowired
   public MessageTransmitter(
-      ConfigFhirServer configFhirServer,
+      FhirConfig fhirConfig,
       FhirCommunicationConfig fhirCommunicationConfig,
       RetryTemplate retryTemplate) {
-    this.configFhirServer = configFhirServer;
+    this.fhirConfig = fhirConfig;
     this.fhirCommunicationConfig = fhirCommunicationConfig;
     this.retryTemplate = retryTemplate;
   }
@@ -65,7 +65,7 @@ public class MessageTransmitter {
       }
 
       LOG.debug(
-          configFhirServer
+          fhirConfig
               .getFhirContext()
               .newJsonParser()
               .setPrettyPrint(true)
@@ -75,7 +75,7 @@ public class MessageTransmitter {
         result =
             retryTemplate.execute(
                 retryContext ->
-                    configFhirServer.getFhirClient().transaction().withBundle(bundle).execute());
+                    fhirConfig.getFhirClient().transaction().withBundle(bundle).execute());
       }
 
     } catch (Exception exc) {
