@@ -1,4 +1,4 @@
-package org.miracum.recruit.notify;
+package org.miracum.recruit.notify.config;
 
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import java.util.HashMap;

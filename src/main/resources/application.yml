@@ -10,6 +10,8 @@ notify:
   rules: {}
 
 spring:
+  application:
+    name: "notify"
   mail:
     host:
     port: 25
@@ -47,3 +49,9 @@ management:
     web:
       exposure:
         include: "*"
+
+opentracing:
+  jaeger:
+    log-spans: false
+    include-jaeger-env-tags: true
+    enabled: false
