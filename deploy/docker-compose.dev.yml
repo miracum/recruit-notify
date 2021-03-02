@@ -10,7 +10,7 @@ services:
       subscription.websocket.enabled: "false"
 
   list:
-    image: docker.miracum.org/uc1-recruit/list:2.4
+    image: docker.miracum.org/uc1-recruit/list:v2.5
     restart: always
     ports:
       - "8083:8080"
