@@ -17,7 +17,7 @@ services:
       - maildev
 
   tester:
-    image: curlimages/curl:7.75.0
+    image: curlimages/curl:7.76.0
     command: >
       -X GET
       --fail
@@ -31,7 +31,7 @@ services:
       - notify
 
   fhir:
-    image: ghcr.io/chgl/hapi-fhir-jpaserver-starter:1.0.0-hapi5.3.0-distroless
+    image: ghcr.io/chgl/hapi-fhir-jpaserver-starter:v1.1.1-hapi5.3.0-distroless
 
   maildev:
     image: djfarrelly/maildev:1.1.0

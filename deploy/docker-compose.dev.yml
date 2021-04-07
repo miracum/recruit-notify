@@ -10,7 +10,7 @@ services:
       subscription.websocket.enabled: "false"
 
   list:
-    image: docker.miracum.org/uc1-recruit/list:v2.5
+    image: docker.miracum.org/uc1-recruit/list:v2.8
     restart: always
     ports:
       - "8083:8080"
@@ -25,7 +25,7 @@ services:
       - "2080:80"
 
   loader:
-    image: curlimages/curl:7.75.0
+    image: curlimages/curl:7.76.0
     command: >
       -X POST
       -H "Content-Type: application/json"
