@@ -18,4 +18,5 @@ e2e:
   script:
     - docker-compose -p $CI_PROJECT_NAME-$CI_JOB_ID-e2e -f tests/e2e/docker-compose.yml up --abort-on-container-exit
   after_script:
+    - docker-compose -p $CI_PROJECT_NAME-$CI_JOB_ID-e2e -f tests/e2e/docker-compose.yml logs
     - docker-compose -p $CI_PROJECT_NAME-$CI_JOB_ID-e2e -f tests/e2e/docker-compose.yml down --volumes --remove-orphans
