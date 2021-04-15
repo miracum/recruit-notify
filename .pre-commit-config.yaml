@@ -21,6 +21,6 @@ repos:
         entry: gitlint
         args: [--contrib=CT1, --ignore=body-is-missing, --msg-filename]
   - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.0.3
+    rev: v1.1.0
     hooks:
       - id: detect-secrets

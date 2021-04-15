@@ -2,16 +2,18 @@ version: "3.7"
 
 services:
   fhir:
-    image: docker.miracum.org/miracum-data/hapi-fhir-jpaserver:v8.1.3
+    image: hapiproject/hapi:v5.4.0
+    environment:
+      HAPI_FHIR_VALIDATION_REQUESTS_ENABLED: "true"
+      HAPI_FHIR_SUBSCRIPTION_RESTHOOK_ENABLED: "true"
+      HAPI_FHIR_FHIR_VERSION: "R4"
+      HAPI_FHIR_CORS_ALLOWCREDENTIALS: "false"
+      HAPI_FHIR_CORS_ALLOWED_ORIGIN: "*"
     ports:
       - "8082:8080"
-    environment:
-      subscription.resthook.enabled: "true"
-      subscription.websocket.enabled: "false"
 
   list:
     image: docker.miracum.org/uc1-recruit/list:v2.8
-    restart: always
     ports:
       - "8083:8080"
     environment:
