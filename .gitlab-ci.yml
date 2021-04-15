@@ -5,6 +5,9 @@ include:
   - project: "devops/ci-templates"
     file: "/standard/.container-build.yml"
 
+build:
+  coverage: '/\d+.\d+ \% covered/'
+
 e2e:
   extends:
     - .job_defaults

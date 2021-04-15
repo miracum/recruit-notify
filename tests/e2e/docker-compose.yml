@@ -31,7 +31,13 @@ services:
       - notify
 
   fhir:
-    image: ghcr.io/chgl/hapi-fhir-jpaserver-starter:v1.1.1-hapi5.3.0-distroless
+    image: hapiproject/hapi:v5.4.0
+    environment:
+      HAPI_FHIR_VALIDATION_REQUESTS_ENABLED: "true"
+      HAPI_FHIR_SUBSCRIPTION_RESTHOOK_ENABLED: "true"
+      HAPI_FHIR_FHIR_VERSION: "R4"
+      HAPI_FHIR_CORS_ALLOWCREDENTIALS: "false"
+      HAPI_FHIR_CORS_ALLOWED_ORIGIN: "*"
 
   maildev:
     image: djfarrelly/maildev:1.1.0
