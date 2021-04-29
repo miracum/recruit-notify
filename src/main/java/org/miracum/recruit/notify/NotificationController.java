@@ -176,9 +176,9 @@ public class NotificationController {
       return true;
     }
 
-    var newResearchSubjectIDs = getResearchSubjectIds(newScreenList.getEntry());
-    var lastResearchSubjectIDs = getResearchSubjectIds(lastScreenList.getEntry());
-    return !newResearchSubjectIDs.equals(lastResearchSubjectIDs);
+    var newResearchSubjectIds = getResearchSubjectIds(newScreenList.getEntry());
+    var lastResearchSubjectIds = getResearchSubjectIds(lastScreenList.getEntry());
+    return !newResearchSubjectIds.equals(lastResearchSubjectIds);
   }
 
   private Set<String> getResearchSubjectIds(List<ListResource.ListEntryComponent> entry) {
