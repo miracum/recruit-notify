@@ -44,6 +44,9 @@ public class MessageStatusUpdater {
             .withId("CommunicationRequest/" + relativeId)
             .execute();
 
-    LOG.info("updated {} status to {}", kv("message", outcome.getId().getIdPart()), kv("status", status));
+    LOG.info(
+        "updated {} status to {}",
+        kv("message", outcome.getId().getIdPart()),
+        kv("status", status));
   }
 }

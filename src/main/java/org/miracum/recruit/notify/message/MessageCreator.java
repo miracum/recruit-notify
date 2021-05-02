@@ -162,7 +162,9 @@ public class MessageCreator {
 
     for (var practitioner : practitionersFhir) {
       LOG.debug(
-          "receiver for {}: {}", kv("trial", acronym), kv("practitioner", practitioner.getId()));
+          "receiver for {}: {}",
+          kv("trial", acronym),
+          kv("practitioner", practitioner.getIdElement().getIdPart()));
 
       var practitionerEmail = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
 
