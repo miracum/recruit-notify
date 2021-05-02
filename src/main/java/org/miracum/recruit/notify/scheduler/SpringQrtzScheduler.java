@@ -5,7 +5,6 @@ import static net.logstash.logback.argument.StructuredArguments.kv;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.PostConstruct;
 import org.miracum.recruit.notify.mailconfig.UserConfig;
 import org.quartz.CronExpression;
 import org.quartz.CronScheduleBuilder;
@@ -32,11 +31,6 @@ public class SpringQrtzScheduler {
   @Autowired
   SpringQrtzScheduler(UserConfig config) {
     this.config = config;
-  }
-
-  @PostConstruct
-  public void init() {
-    LOG.info("init scheduler");
   }
 
   @Bean
@@ -69,6 +63,7 @@ public class SpringQrtzScheduler {
   private JobDetail createJobDetail(String jobName, String groupName) {
     return JobBuilder.newJob(NotifyMessageSchedulerJob.class)
         .withIdentity(jobName, groupName)
+        .storeDurably(true)
         .build();
   }
 

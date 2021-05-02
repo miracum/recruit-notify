@@ -2,7 +2,6 @@ package org.miracum.recruit.notify.config;
 
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import java.util.HashMap;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,16 +14,11 @@ import org.springframework.web.client.HttpServerErrorException;
 /** Configure backoffPeriod and maxAttempts for application. */
 @Configuration
 public class AppConfig {
-  private final long backoffPeriod;
-  private final int maxAttempts;
+  @Value("${notify.retry.backoffPeriodMs}")
+  private long backoffPeriod;
 
-  @Autowired
-  public AppConfig(
-      @Value("${notify.retry.backoffPeriodMs}") long backoffPeriodMs,
-      @Value("${notify.retry.maxAttempts}") int maxAttempts) {
-    this.backoffPeriod = backoffPeriodMs;
-    this.maxAttempts = maxAttempts;
-  }
+  @Value("${notify.retry.maxAttempts}")
+  private int maxAttempts;
 
   @Bean
   public RetryTemplate retryTemplate() {

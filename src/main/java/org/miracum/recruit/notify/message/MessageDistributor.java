@@ -25,11 +25,11 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 
-/** Distritute open messages that are stored as communication resource to fhir. */
+/** Distribute open messages that are stored as CommunicationRequest resource in the FHIR server. */
 @Service
 public class MessageDistributor {
-
   private static final Logger LOG = LoggerFactory.getLogger(MessageDistributor.class);
+
   private final UserConfig notificationRuleConfig;
   private final FhirServerProvider fhirServerProvider;
   private final JavaMailSender appJavaMailSender;
@@ -73,8 +73,8 @@ public class MessageDistributor {
 
     // TODO: strongly type this list by using the CommunicationRequest object instead of just the
     // string id
-    List<String> messagesSentSuccessfully = new ArrayList<>();
-    List<String> messagesSentFailed = new ArrayList<>();
+    var messagesSentSuccessfully = new ArrayList<String>();
+    var messagesSentFailed = new ArrayList<String>();
 
     for (var message : openMessages) {
       var notifyInfo = new NotifyInfo();

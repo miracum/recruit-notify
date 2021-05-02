@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Data structure to distinguish receipients that will receive notification ad hoc (just in time) or
+ * Data structure to distinguish recipients that will receive notification ad hoc (just in time) or
  * delayed because of assigned to timer event in app config.
  */
 @Service

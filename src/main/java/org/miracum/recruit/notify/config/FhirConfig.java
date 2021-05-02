@@ -16,21 +16,12 @@ import okhttp3.Connection;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Configure fhir server items based on fhirUrl given in configuration file. */
 @Configuration
 public class FhirConfig {
-
-  private final String fhirUrl;
-
-  @Autowired
-  public FhirConfig(@Value("${fhir.url}") String fhirUrl) {
-    this.fhirUrl = fhirUrl;
-  }
 
   @Bean
   public FhirContext fhirContext() {
@@ -88,7 +79,8 @@ public class FhirConfig {
   }
 
   @Bean
-  public IGenericClient getFhirClient(FhirContext fhirContext) {
+  public IGenericClient getFhirClient(
+      @Value("${fhir.url}") String fhirUrl, FhirContext fhirContext) {
     return fhirContext.newRestfulGenericClient(fhirUrl);
   }
 }

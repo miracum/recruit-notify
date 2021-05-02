@@ -25,7 +25,7 @@ public class MessageTransmitter {
     this.fhirClient = fhirClient;
   }
 
-  /** Save message list to target fhir server. */
+  /** Save message list to target FHIR server. */
   public void transmit(List<CommunicationRequest> messages) {
     LOG.info("transmit message list to fhir server.");
 
@@ -39,8 +39,11 @@ public class MessageTransmitter {
 
     for (var message : messages) {
       var topic = message.getReasonCodeFirstRep().getText();
-      LOG.debug("adding CommunicationRequest for {} to transaction", kv("topic", topic));
       var messageUuid = UUID.randomUUID();
+      LOG.debug(
+          "adding CommunicationRequest for {} as {} to transaction",
+          kv("topic", topic),
+          kv("uuid", messageUuid));
       bundle
           .addEntry()
           .setResource(message)
