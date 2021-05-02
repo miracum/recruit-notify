@@ -1,13 +1,13 @@
 package org.miracum.recruit.notify;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
+import static org.hl7.fhir.instance.model.api.IBaseBundle.LINK_NEXT;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.util.BundleUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.hl7.fhir.instance.model.api.IAnyResource;
-import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.instance.model.api.IBaseResource;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CommunicationRequest;
@@ -76,7 +76,7 @@ public class FhirServerProvider {
                 fhirClient.getFhirContext(), listBundle, ResearchSubject.class));
 
     // Load the subsequent pages
-    while (listBundle.getLink(IBaseBundle.LINK_NEXT) != null) {
+    while (listBundle.getLink(LINK_NEXT) != null) {
       listBundle = fhirClient.loadPage().next(listBundle).execute();
       researchSubjectList.addAll(
           BundleUtil.toListOfResourcesOfType(
@@ -124,41 +124,23 @@ public class FhirServerProvider {
   }
 
   /**
-   * Query active CommunicationRequests from FHIR server for given list of subscriber's email
+   * Query active CommunicationRequests from FHIR server for the given list of subscriber's email
    * addresses
    */
   public List<CommunicationRequest> getOpenMessagesForSubscribers(List<String> subscribers) {
     LOG.info("retrieving open messages for {}", kv("numSubscribers", subscribers.size()));
 
-    List<CommunicationRequest> messages = new ArrayList<>();
+    var allOpenMessages =
+        getCommunicationRequestsIncludingRecipientsByStatus(CommunicationRequestStatus.ACTIVE);
 
-    // TODO: refactor to use getCommunicationRequestsByStatus (with optional include)
-    var activeCommunicationRequests =
-        fhirClient
-            .search()
-            .forResource(CommunicationRequest.class)
-            .where(
-                CommunicationRequest.STATUS
-                    .exactly()
-                    .code(CommunicationRequestStatus.ACTIVE.toCode()))
-            .and(
-                CommunicationRequest.IDENTIFIER.hasSystemWithAnyCode(
-                    fhirSystemsConfig.getCommunication()))
-            .include(CommunicationRequest.INCLUDE_RECIPIENT.asNonRecursive())
-            .returnBundle(Bundle.class)
-            .execute();
-
-    var communicationList =
-        BundleUtil.toListOfResourcesOfType(
-            fhirClient.getFhirContext(), activeCommunicationRequests, CommunicationRequest.class);
-
-    if (communicationList.isEmpty()) {
+    if (allOpenMessages.isEmpty()) {
       LOG.info("no active CommunicationRequest resources found");
       return List.of();
     }
 
+    var messages = new ArrayList<CommunicationRequest>();
     for (var subscriber : subscribers) {
-      for (var message : communicationList) {
+      for (var message : allOpenMessages) {
         var recipientList = message.getRecipient();
         for (var reference : recipientList) {
           if (reference.getResource().fhirType().equals("Practitioner")) {
@@ -172,7 +154,8 @@ public class FhirServerProvider {
 
             if (PractitionerUtils.hasEmail(practitioner, subscriber)) {
               LOG.debug(
-                  "add {} to list for receiver {}",
+                  "add {} to list for {} ({})",
+                  kv("practitioner", practitioner.getIdElement().getIdPart()),
                   kv("message", message.getId()),
                   kv("subscriber", subscriber));
               messages.add(message);
@@ -185,11 +168,11 @@ public class FhirServerProvider {
     return messages;
   }
 
-  public List<CommunicationRequest> getCommunicationRequestsByStatus(
+  public List<CommunicationRequest> getCommunicationRequestsIncludingRecipientsByStatus(
       CommunicationRequestStatus status) {
     LOG.info("retrieving CommunicationRequest with {} from server", kv("status", status));
 
-    var listBundleCommunications =
+    var results =
         fhirClient
             .search()
             .forResource(CommunicationRequest.class)
@@ -197,25 +180,38 @@ public class FhirServerProvider {
             .and(
                 CommunicationRequest.IDENTIFIER.hasSystemWithAnyCode(
                     fhirSystemsConfig.getCommunication()))
-            .count(100)
+            .include(CommunicationRequest.INCLUDE_RECIPIENT.asNonRecursive())
             .returnBundle(Bundle.class)
             .execute();
 
-    var communicationList =
-        BundleUtil.toListOfResourcesOfType(
-            fhirClient.getFhirContext(), listBundleCommunications, CommunicationRequest.class);
+    var allMessages = new ArrayList<CommunicationRequest>();
 
-    if (!communicationList.isEmpty()) {
-      LOG.debug(
-          "number of requests with {}  {}", kv("status", status), kv("count", communicationList.size()));
-    }
+    do {
+      // cast all resources in the bundle to CommunicationRequest
+      var messagesInPageBundle =
+          BundleUtil.toListOfResourcesOfType(
+              fhirClient.getFhirContext(), results, CommunicationRequest.class);
 
-    return communicationList;
+      allMessages.addAll(messagesInPageBundle);
+
+      if (results.getLink(LINK_NEXT) != null) {
+        LOG.debug(
+            "fetching next page of results {} from server",
+            kv("link", results.getLink(LINK_NEXT).getUrl()));
+        var resultsFinal = results;
+        results = fhirClient.loadPage().next(resultsFinal).execute();
+      } else {
+        results = null;
+      }
+
+    } while (results != null);
+
+    return allMessages;
   }
 
-  /** Query top 100 communication resources with state entered-in-error. */
+  /** Query top 100 communication resources with state ONHOLD. */
   public List<CommunicationRequest> getErrorMessages() {
-    return getCommunicationRequestsByStatus(CommunicationRequestStatus.ONHOLD);
+    return getCommunicationRequestsIncludingRecipientsByStatus(CommunicationRequestStatus.ONHOLD);
   }
 
   /**
@@ -223,7 +219,7 @@ public class FhirServerProvider {
    * state active to be delivered.
    */
   public List<CommunicationRequest> getPreparedMessages() {
-    return getCommunicationRequestsByStatus(CommunicationRequestStatus.ACTIVE);
+    return getCommunicationRequestsIncludingRecipientsByStatus(CommunicationRequestStatus.ACTIVE);
   }
 
   public Bundle executeTransaction(Bundle transaction) {
