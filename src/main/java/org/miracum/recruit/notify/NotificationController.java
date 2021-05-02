@@ -1,5 +1,9 @@
 package org.miracum.recruit.notify;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
+import ca.uhn.fhir.parser.IParser;
+import com.google.common.base.Strings;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -7,13 +11,11 @@ import org.hl7.fhir.r4.model.ListResource;
 import org.hl7.fhir.r4.model.Reference;
 import org.hl7.fhir.r4.model.ResearchSubject;
 import org.hl7.fhir.r4.model.ResearchSubject.ResearchSubjectStatus;
-import org.miracum.recruit.notify.config.FhirConfig;
-import org.miracum.recruit.notify.logging.LogMethodCalls;
-import org.miracum.recruit.notify.message.create.MessageCreator;
+import org.miracum.recruit.notify.fhirserver.FhirSystemsConfig;
+import org.miracum.recruit.notify.message.MessageCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.listener.RetryListenerSupport;
@@ -32,16 +34,10 @@ public class NotificationController {
   private static final Logger LOG = LoggerFactory.getLogger(NotificationController.class);
 
   private final RetryTemplate retryTemplate;
-  private final String screeningListReferenceSystem;
-
-  final MessageCreator messageCreator;
-
-  final FhirServerProvider fhirServer;
-
-  final FhirConfig fhirConfig;
-
-  @Value("${fhir.systems.studyacronym}")
-  private String studyAcronymSystem;
+  private final MessageCreator messageCreator;
+  private final IParser fhirParser;
+  private final FhirServerProvider fhirServer;
+  private final FhirSystemsConfig fhirSystems;
 
   /**
    * Prepare config items and email utils for receiving and handle subscription events from target
@@ -50,15 +46,15 @@ public class NotificationController {
   @Autowired
   public NotificationController(
       RetryTemplate retryTemplate,
-      @Value("${fhir.systems.screeninglistreference}") String screeningListReferenceSystem,
-      FhirConfig fhirConfig,
+      FhirSystemsConfig fhirSystems,
       FhirServerProvider fhirServer,
-      MessageCreator messageCreator) {
+      MessageCreator messageCreator,
+      IParser fhirParser) {
     this.retryTemplate = retryTemplate;
-    this.screeningListReferenceSystem = screeningListReferenceSystem;
-    this.fhirConfig = fhirConfig;
+    this.fhirSystems = fhirSystems;
     this.fhirServer = fhirServer;
     this.messageCreator = messageCreator;
+    this.fhirParser = fhirParser;
   }
 
   /**
@@ -75,7 +71,7 @@ public class NotificationController {
       return;
     }
 
-    var list = fhirConfig.getFhirParser().parseResource(ListResource.class, body);
+    var list = fhirParser.parseResource(ListResource.class, body);
 
     if (!list.hasEntry()) {
       LOG.warn("Received empty screening list {}, aborting.", list.getId());
@@ -95,7 +91,7 @@ public class NotificationController {
   }
 
   private Void handleSubscription(ListResource list) {
-    var studyReferenceExtension = list.getExtensionByUrl(screeningListReferenceSystem);
+    var studyReferenceExtension = list.getExtensionByUrl(fhirSystems.getScreeningListReference());
 
     if (studyReferenceExtension == null) {
       LOG.warn(
@@ -112,25 +108,23 @@ public class NotificationController {
     var studyReference = (Reference) studyReferenceExtension.getValue();
 
     var researchSubjectList = fhirServer.getResearchSubjectsFromList(list);
-    if (!hasPatientListCandidate(researchSubjectList)) {
-      LOG.info("list {} doesn't have any candidates", list.getId());
+    if (!hasPatientListAnyCandidates(researchSubjectList)) {
+      LOG.info("{} doesn't have any subjects with status 'candidate'", kv("list", list.getId()));
       return null;
     }
 
     final var acronym = retrieveStudyAcronym(studyReference);
-
-    if (acronym.equals("")) {
+    if (Strings.isNullOrEmpty(acronym)) {
+      LOG.error("couldn't get acronym for {}", kv("list", list.getId()));
       return null;
     }
 
-    String listId = list.getIdElement().getIdPart();
-    LOG.info("list id to handle: {}", listId);
+    var listId = list.getIdElement().getIdPart();
     messageCreator.temporaryStoreMessagesInFhir(acronym, listId);
 
     return null;
   }
 
-  @LogMethodCalls
   private String retrieveStudyAcronym(Reference studyReference) {
     var studyAcronym = "";
 
@@ -139,33 +133,30 @@ public class NotificationController {
     } else {
       var study =
           fhirServer.getResearchStudyFromId(studyReference.getReferenceElement().getIdPart());
+      var studyArg = kv("study", studyReference.getReference());
 
-      if (study.hasExtension(studyAcronymSystem)) {
-        var studyAcronymExtension = study.getExtensionByUrl(studyAcronymSystem);
+      if (study.hasExtension(fhirSystems.getStudyAcronym())) {
+        var studyAcronymExtension = study.getExtensionByUrl(fhirSystems.getStudyAcronym());
         studyAcronym = studyAcronymExtension.getValue().toString();
         LOG.debug(
-            "Using acronym '{}' from extension as study identifier for {}.",
-            studyAcronym,
-            studyReference.getReference());
+            "using {} from extension as study identifier for {}.",
+            kv("acronym", studyAcronym),
+            studyArg);
       } else {
-        LOG.warn("Study acronym not set for study {}.", studyReference.getReference());
+        LOG.warn("study acronym not set for {}.", studyArg);
         if (study.hasTitle()) {
           studyAcronym = study.getTitle();
-          LOG.debug(
-              "Using title '{}' as study identifier for {}.",
-              studyAcronym,
-              studyReference.getReference());
+          LOG.debug("Using {} as study identifier for {}.", kv("title", studyAcronym), studyArg);
         } else {
-          LOG.error(
-              "No identifier available for study {}. Aborting.", studyReference.getReference());
-          return "";
+          LOG.error("No identifier available for {}. Aborting.", studyArg);
+          return null;
         }
       }
     }
     return studyAcronym;
   }
 
-  private boolean hasPatientListCandidate(List<ResearchSubject> researchSubjects) {
+  private boolean hasPatientListAnyCandidates(List<ResearchSubject> researchSubjects) {
     return researchSubjects.stream()
         .anyMatch(subject -> subject.getStatus() == ResearchSubjectStatus.CANDIDATE);
   }

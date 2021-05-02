@@ -7,21 +7,25 @@ notify:
     from: "rekrutierungsvorschlag@miracum.org"
     link-template: "http://replace-host-name:8083/recommendations/[list_id]"
     subject: "MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die Studie [study_acronym]"
-  rules: {}
+  rules: { }
 
 spring:
   application:
     name: "notify"
   mail:
-    host:
+    host: ""
     port: 25
     username:
     password:
     properties:
       mail:
-        debug: true
+        debug: false
   profiles:
     active: dev
+
+logging:
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:%5p}) %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m %X %n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"
 
 webhook:
   endpoint: "http://host.docker.internal:8080/on-list-change"
@@ -31,13 +35,12 @@ fhir:
   subscription:
     criteria: "List?code=https://fhir.miracum.org/uc1/CodeSystem/screeningList|screening-recommendations"
   systems:
-    screeninglistReference: "https://fhir.miracum.org/uc1/StructureDefinition/belongsToStudy"
-    studyAcronym: "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym"
-    subscriberSystem: "https://fhir.miracum.org/uc1/NamingSystem/notificationSubscriberId"
-    communication: "https://fhir.miracum.org/uc1/NamingSystem/notificationId"
-  communication:
-    payloadText: "Notify: Temporary Stored Message"
-    systemValue: "MIRACUM Notify"
+    screening-list-reference: "https://fhir.miracum.org/uc1/StructureDefinition/belongsToStudy"
+    study-acronym: "https://fhir.miracum.org/uc1/StructureDefinition/studyAcronym"
+    subscriber-id: "https://fhir.miracum.org/uc1/identifiers/notification-subscriber-id"
+    communication: "https://fhir.miracum.org/uc1/identifiers/notification-id"
+    communication-status-reason: "https://fhir.miracum.org/uc1/CodeSystem/notification-status-reason"
+    communication-category: "http://terminology.hl7.org/CodeSystem/communication-category"
 
 management:
   endpoint:

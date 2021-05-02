@@ -1,10 +1,11 @@
 package org.miracum.recruit.notify.scheduler;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
-import org.miracum.recruit.notify.logging.LogMethodCalls;
 import org.miracum.recruit.notify.mailconfig.UserConfig;
 import org.quartz.CronExpression;
 import org.quartz.CronScheduleBuilder;
@@ -17,27 +18,20 @@ import org.quartz.TriggerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
-import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 
 /** Quartz Scheduler initializing scheduled job for each defined timer in app config. */
 @Configuration
 public class SpringQrtzScheduler {
-
   private static final Logger LOG = LoggerFactory.getLogger(SpringQrtzScheduler.class);
 
   private final UserConfig config;
 
-  private final ApplicationContext applicationContext;
-
   @Autowired
-  SpringQrtzScheduler(UserConfig config, ApplicationContext applicationContext) {
+  SpringQrtzScheduler(UserConfig config) {
     this.config = config;
-    this.applicationContext = applicationContext;
   }
 
   @PostConstruct
@@ -45,95 +39,54 @@ public class SpringQrtzScheduler {
     LOG.info("init scheduler");
   }
 
-  /** Spring bean job factory to return job factory. */
   @Bean
-  public SpringBeanJobFactory springBeanJobFactory() {
-    AutoWiringSpringBeanJobFactory jobFactory = new AutoWiringSpringBeanJobFactory();
-    LOG.debug("Configuring Job factory");
+  public Scheduler scheduler(SchedulerFactoryBean factory) throws SchedulerException {
+    var schedulerData = createSchedulerInfo(config.getSchedules());
+    var scheduler = factory.getScheduler();
 
-    jobFactory.setApplicationContext(applicationContext);
-    return jobFactory;
-  }
-
-  @Bean("schedulerFactoryBean")
-  public SchedulerFactoryBean schedulerFactoryBean() {
-    SchedulerFactoryBean factory = new SchedulerFactoryBean();
-    factory.setJobFactory(springBeanJobFactory());
-    return factory;
-  }
-
-  /** Create scheduler for each defined trigger. */
-  @Bean
-  @LogMethodCalls
-  public List<Scheduler> scheduler(@Qualifier("schedulerFactoryBean") SchedulerFactoryBean factory)
-      throws SchedulerException {
-
-    List<Scheduler> result = new ArrayList<>();
-
-    List<SchedulerData> schedulerData = createSchedulerInfo(config.getSchedules());
-
-    for (SchedulerData scheduleItem : schedulerData) {
-
-      LOG.debug("schedule item: {}", scheduleItem.getJobName());
-
-      Trigger trigger =
-          trigger(
+    for (var scheduleItem : schedulerData) {
+      var trigger =
+          createTrigger(
               scheduleItem.getJobName(),
               scheduleItem.getGroupName(),
               scheduleItem.getCronExpression());
-      JobDetail job = jobDetail(scheduleItem.getJobName(), scheduleItem.getGroupName());
 
-      LOG.debug("create scheduler instance");
-      Scheduler scheduler = factory.getScheduler();
+      var job = createJobDetail(scheduleItem.getJobName(), scheduleItem.getGroupName());
 
-      LOG.debug("schedule job by job and trigger");
+      LOG.debug(
+          "scheduling {} at {}",
+          kv("job", job.getKey()),
+          kv("cron", scheduleItem.getCronExpression(), "{0}=\"{1}\""));
       scheduler.scheduleJob(job, trigger);
-
-      LOG.debug("start scheduler instance");
-      scheduler.start();
-
-      result.add(scheduler);
     }
 
-    return result;
+    LOG.debug("starting scheduler instance");
+    scheduler.start();
+
+    return scheduler;
   }
 
-  @LogMethodCalls
-  private JobDetail jobDetail(String jobName, String groupName) {
-
-    LOG.debug("job item {}", jobName);
-
+  private JobDetail createJobDetail(String jobName, String groupName) {
     return JobBuilder.newJob(NotifyMessageSchedulerJob.class)
         .withIdentity(jobName, groupName)
         .build();
   }
 
-  @LogMethodCalls
-  private Trigger trigger(String triggerName, String triggerGroup, CronExpression cronExpression) {
-
-    LOG.debug("trigger item {}", triggerName);
-
+  private Trigger createTrigger(
+      String triggerName, String triggerGroup, CronExpression cronExpression) {
     return TriggerBuilder.newTrigger()
         .withIdentity(triggerName, triggerGroup)
         .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
         .build();
   }
 
-  @LogMethodCalls
   private List<SchedulerData> createSchedulerInfo(Map<String, CronExpression> timerList) {
-
-    List<SchedulerData> schedulerData = new ArrayList<>();
-
+    var schedulerData = new ArrayList<SchedulerData>();
     for (var cronTimer : timerList.entrySet()) {
-
-      LOG.debug("timer name \"{}\" was found", cronTimer.getKey());
-      SchedulerData schedulerDataItem = new SchedulerData();
-
+      var schedulerDataItem = new SchedulerData();
       schedulerDataItem.setJobName(cronTimer.getKey());
       schedulerDataItem.setTriggerName(cronTimer.getKey());
-
       schedulerDataItem.setCronExpression(cronTimer.getValue());
-
       schedulerDataItem.setGroupName("notify");
       schedulerDataItem.setTriggerGroup("notify");
 

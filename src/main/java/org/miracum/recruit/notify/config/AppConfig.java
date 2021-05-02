@@ -26,7 +26,6 @@ public class AppConfig {
     this.maxAttempts = maxAttempts;
   }
 
-  /** RetryTemplate. */
   @Bean
   public RetryTemplate retryTemplate() {
     var retryTemplate = new RetryTemplate();
