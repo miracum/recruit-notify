@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   notify:
-    image: docker.miracum.org/uc1-recruit/notify:$IMAGE_TAG
+    image: ghcr.io/miracum/recruit/notify:$IMAGE_TAG
     environment:
       FHIR_URL: "http://fhir:8080/fhir"
       WEBHOOK_ENDPOINT: "http://notify:8080/on-list-change"
