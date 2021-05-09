@@ -7,7 +7,7 @@ notify:
     from: "rekrutierungsvorschlag@miracum.org"
     link-template: "http://replace-host-name:8083/recommendations/[list_id]"
     subject: "MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die Studie [study_acronym]"
-  rules: { }
+  rules:
 
 spring:
   application:
