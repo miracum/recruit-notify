@@ -13,6 +13,7 @@ notify:
       everyHour: "0 0 0/1 1/1 * ? *"
       everyFiveMinutes: "0 0/5 * 1/1 * ? *"
       every5Minutes: "0 0/5 * 1/1 * ? *"
+      everyMinute: "0 0/1 * 1/1 * ? *"
 
     trials:
       - acronym: "*"
