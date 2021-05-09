@@ -2,9 +2,7 @@ package org.miracum.recruit.notify.scheduler;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.HashSet;
 import org.miracum.recruit.notify.mailconfig.UserConfig;
 import org.quartz.CronExpression;
 import org.quartz.CronScheduleBuilder;
@@ -35,24 +33,23 @@ public class SpringQrtzScheduler {
 
   @Bean
   public Scheduler scheduler(SchedulerFactoryBean factory) throws SchedulerException {
-    var schedulerData = createSchedulerInfo(config.getSchedules());
     var scheduler = factory.getScheduler();
 
-    for (var scheduleItem : schedulerData) {
-      var trigger =
-          createTrigger(
-              scheduleItem.getJobName(),
-              scheduleItem.getGroupName(),
-              scheduleItem.getCronExpression());
-
-      var job = createJobDetail(scheduleItem.getJobName(), scheduleItem.getGroupName());
+    var job = createJobDetail("notifySubscribers", "notify");
+    var triggers = new HashSet<Trigger>();
+    for (var schedule : config.getSchedules().entrySet()) {
+      var trigger = createTrigger(schedule.getKey(), schedule.getValue());
 
       LOG.debug(
-          "scheduling {} at {}",
-          kv("job", job.getKey()),
-          kv("cron", scheduleItem.getCronExpression(), "{0}=\"{1}\""));
-      scheduler.scheduleJob(job, trigger);
+          "adding {} at {} for job {}",
+          kv("trigger", schedule.getKey()),
+          kv("cron", schedule.getValue(), "{0}=\"{1}\""),
+          kv("job", job.getKey()));
+
+      triggers.add(trigger);
     }
+
+    scheduler.scheduleJob(job, triggers, true);
 
     LOG.debug("starting scheduler instance");
     scheduler.start();
@@ -61,32 +58,16 @@ public class SpringQrtzScheduler {
   }
 
   private JobDetail createJobDetail(String jobName, String groupName) {
-    return JobBuilder.newJob(NotifyMessageSchedulerJob.class)
+    return JobBuilder.newJob(NotifySubscribersJob.class)
         .withIdentity(jobName, groupName)
         .storeDurably(true)
         .build();
   }
 
-  private Trigger createTrigger(
-      String triggerName, String triggerGroup, CronExpression cronExpression) {
+  private Trigger createTrigger(String triggerName, CronExpression cronExpression) {
     return TriggerBuilder.newTrigger()
-        .withIdentity(triggerName, triggerGroup)
+        .withIdentity(triggerName)
         .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
         .build();
-  }
-
-  private List<SchedulerData> createSchedulerInfo(Map<String, CronExpression> timerList) {
-    var schedulerData = new ArrayList<SchedulerData>();
-    for (var cronTimer : timerList.entrySet()) {
-      var schedulerDataItem = new SchedulerData();
-      schedulerDataItem.setJobName(cronTimer.getKey());
-      schedulerDataItem.setTriggerName(cronTimer.getKey());
-      schedulerDataItem.setCronExpression(cronTimer.getValue());
-      schedulerDataItem.setGroupName("notify");
-      schedulerDataItem.setTriggerGroup("notify");
-
-      schedulerData.add(schedulerDataItem);
-    }
-    return schedulerData;
   }
 }
