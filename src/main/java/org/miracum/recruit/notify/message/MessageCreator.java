@@ -76,7 +76,7 @@ public class MessageCreator {
    * communication request resources.
    */
   public void temporaryStoreMessagesInFhir(String acronym, String listId) {
-    LOG.info("create messages in queue for {} ({})", kv("listId", listId), kv("trial", acronym));
+    LOG.info("create messages in queue for {}", kv("trial", acronym));
 
     List<Practitioner> practitionersFhir = retrieveSubscribersByAcronym(acronym);
 
@@ -93,7 +93,7 @@ public class MessageCreator {
     List<CommunicationRequest> messagesDelayed =
         createMessages(acronym, listId, practitionerListContainer.getScheduledRecipients());
 
-    NotifyInfo notifyInfo = generateNotifyInfo(acronym, listId);
+    var notifyInfo = generateNotifyInfo(acronym, listId);
 
     if (!messagesAdHoc.isEmpty()) {
       sendMessagesAdHoc(messagesAdHoc, practitionerListContainer.getAdHocRecipients(), notifyInfo);
@@ -105,7 +105,7 @@ public class MessageCreator {
   }
 
   private NotifyInfo generateNotifyInfo(String acronym, String listId) {
-    NotifyInfo notifyInfo = new NotifyInfo();
+    var notifyInfo = new NotifyInfo();
     notifyInfo.setStudyAcronym(acronym);
     notifyInfo.setScreeningListLink(mailerConfig.getLinkTemplate().replace("[list_id]", listId));
     return notifyInfo;

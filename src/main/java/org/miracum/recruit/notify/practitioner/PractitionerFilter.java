@@ -1,5 +1,7 @@
 package org.miracum.recruit.notify.practitioner;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,10 +41,9 @@ public class PractitionerFilter {
         extractRecipients(filteredDelayedSubscriptions, practitionerList));
 
     LOG.debug(
-        "number of adhoc recipients: {}", practitionerListContainer.getAdHocRecipients().size());
-    LOG.debug(
-        "number of scheduled recipients: {}",
-        practitionerListContainer.getScheduledRecipients().size());
+        "dividing list of practitioners from config {}, {}",
+        kv("numInstantReceivers", practitionerListContainer.getAdHocRecipients().size()),
+        kv("numScheduledReceivers", practitionerListContainer.getScheduledRecipients().size()));
 
     return practitionerListContainer;
   }

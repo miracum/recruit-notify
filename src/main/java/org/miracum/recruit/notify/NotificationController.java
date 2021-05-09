@@ -15,6 +15,7 @@ import org.miracum.recruit.notify.fhirserver.FhirSystemsConfig;
 import org.miracum.recruit.notify.message.MessageCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
@@ -99,6 +100,8 @@ public class NotificationController {
           list.getId());
       return null;
     }
+
+    MDC.put("listId", list.getId());
 
     if (!hasPatientListChanged(list)) {
       LOG.info("list {} hasn't changed since last time", list.getId());

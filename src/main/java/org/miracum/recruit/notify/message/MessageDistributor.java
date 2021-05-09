@@ -54,12 +54,12 @@ public class MessageDistributor {
     this.mailerConfig = mailerConfig;
   }
 
-  public void distribute(String jobKey) {
-    LOG.info("begin distributing messages for {}", kv("job", jobKey));
+  public void distribute(String triggerKey) {
+    LOG.info("begin distributing messages");
 
     var subscriptions =
         notificationRuleConfig.getSubscriptions().stream()
-            .filter(rule -> jobKey.equals(rule.getNotify()))
+            .filter(rule -> triggerKey.equals(rule.getNotify()))
             .collect(toList());
 
     List<String> subscribers = new ArrayList<>();
@@ -67,7 +67,7 @@ public class MessageDistributor {
       subscribers.add(item.getEmail());
     }
 
-    LOG.debug("{} subscribe to schedule of {} ", kv("subscribers", subscribers), kv("job", jobKey));
+    LOG.debug("{} subscribe to schedule", kv("subscribers", subscribers));
 
     var openMessages = fhirServerProvider.getOpenMessagesForSubscribers(subscribers);
 
