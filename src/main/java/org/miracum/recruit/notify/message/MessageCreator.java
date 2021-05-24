@@ -187,11 +187,11 @@ public class MessageCreator {
           contactPoint -> practitionerReference.setDisplay(contactPoint.getValue()));
       communication.addRecipient(practitionerReference);
 
-      var screeningListReference = new Reference();
-      screeningListReference.setReference("List/" + listId);
+      var screeningListReference =
+          new Reference().setReference("List/" + listId).setDisplay(acronym);
       communication.addAbout(screeningListReference);
 
-      var reasonCodeList = createReasonCodeByAcronym(acronym);
+      var reasonCodeList = createReasonCodeFromAcronym(acronym);
       communication.setReasonCode(reasonCodeList);
 
       var identifierList = createAppSpecificIdentifier();
@@ -211,24 +211,18 @@ public class MessageCreator {
     return new CommunicationRequestPayloadComponent().setContent(payloadText);
   }
 
-  private List<CodeableConcept> createReasonCodeByAcronym(String acronym) {
-    var reasonCodeList = new ArrayList<CodeableConcept>();
-    var reasonCode = new CodeableConcept();
-    reasonCode.setText(acronym);
-    reasonCodeList.add(reasonCode);
-    return reasonCodeList;
+  private List<CodeableConcept> createReasonCodeFromAcronym(String acronym) {
+    var reasonCode = new CodeableConcept().setText(acronym);
+    return List.of(reasonCode);
   }
 
   private List<Identifier> createAppSpecificIdentifier() {
-    var identifier = new Identifier();
-    identifier.setSystem(fhirSystemConfig.getCommunication());
-
     var communicationUuid = UUID.randomUUID();
-
-    identifier.setValue(communicationUuid.toString());
-    var identifierList = new ArrayList<Identifier>();
-    identifierList.add(identifier);
-    return identifierList;
+    var identifier =
+        new Identifier()
+            .setSystem(fhirSystemConfig.getCommunication())
+            .setValue(communicationUuid.toString());
+    return List.of(identifier);
   }
 
   private void storeMessagesInFhir(List<CommunicationRequest> messages) {
@@ -244,7 +238,6 @@ public class MessageCreator {
     List<CommunicationRequest> extractedMessages = new ArrayList<>();
 
     for (var messageToPrepare : messages) {
-
       var referenceIdReceiver = messageToPrepare.getRecipientFirstRep().getReference();
       var idPartReceiver = referenceIdReceiver.substring(referenceIdReceiver.lastIndexOf("/") + 1);
 
@@ -263,7 +256,6 @@ public class MessageCreator {
       List<CommunicationRequest> alreadyPreparedMessages,
       CommunicationRequest messageToPrepare,
       String idPartReceiver) {
-
     var topic = messageToPrepare.getReasonCodeFirstRep().getText();
 
     LOG.info(
@@ -276,8 +268,8 @@ public class MessageCreator {
     var topicAlreadyExists = false;
     var receiverAlreadyExists = false;
 
-    for (var messagesAlreadyPrepared : alreadyPreparedMessages) {
-      topicAlreadyExists = messagesAlreadyPrepared.getReasonCodeFirstRep().getText().equals(topic);
+    for (var messageAlreadyPrepared : alreadyPreparedMessages) {
+      topicAlreadyExists = messageAlreadyPrepared.getReasonCodeFirstRep().getText().equals(topic);
       receiverAlreadyExists =
           checkIfMessageForRecipientIsAlreadyRegistered(messageToPrepare, idPartReceiver);
 
