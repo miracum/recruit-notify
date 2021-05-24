@@ -2,8 +2,6 @@ package org.miracum.recruit.notify.mailsender;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.thymeleaf.TemplateEngine;
@@ -11,8 +9,6 @@ import org.thymeleaf.context.Context;
 
 /** Message will be prepared and will be sent by java mail sender and thymeleaf template. */
 public class MailSender {
-  private static final Logger LOG = LoggerFactory.getLogger(MailSender.class);
-
   private final JavaMailSender javaMailSender;
   private final TemplateEngine templateEngine;
 
@@ -28,7 +24,7 @@ public class MailSender {
 
   private MimeMessage prepareMessage(NotifyInfo notifyInfo, MailInfo mailInfo)
       throws MessagingException {
-    MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+    var mimeMessage = javaMailSender.createMimeMessage();
 
     var ctx = new Context();
     ctx.setVariable("studyName", notifyInfo.getStudyAcronym());

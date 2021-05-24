@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.util.Strings;
-import org.hl7.fhir.r4.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.r4.model.Practitioner;
 import org.miracum.recruit.notify.mailconfig.UserConfig.Subscription;
 import org.slf4j.Logger;
@@ -33,7 +32,7 @@ public class PractitionerFilter {
     var filteredAdHocSubscriptions = filterAdHocSubscriptions(listSubscriptions);
     var filteredDelayedSubscriptions = filterDelayedSubscriptions(listSubscriptions);
 
-    PractitionerListContainer practitionerListContainer = new PractitionerListContainer();
+    var practitionerListContainer = new PractitionerListContainer();
 
     practitionerListContainer.setAdHocRecipients(
         extractRecipients(filteredAdHocSubscriptions, practitionerList));
@@ -54,15 +53,7 @@ public class PractitionerFilter {
     var recipients = new ArrayList<Practitioner>();
     for (var practitioner : practitionerList) {
       for (var subscription : filteredSubscriptions) {
-        var contactPoint =
-            practitioner.getTelecom().stream()
-                .filter(
-                    com ->
-                        com.getSystem().equals(ContactPointSystem.EMAIL)
-                            && com.getValue().equals(subscription.getEmail()))
-                .findFirst();
-
-        if (contactPoint.isPresent()) {
+        if (PractitionerUtils.hasEmail(practitioner, subscription.getEmail())) {
           recipients.add(practitioner);
         }
       }

@@ -6,6 +6,8 @@ import org.hl7.fhir.r4.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.r4.model.Practitioner;
 
 public final class PractitionerUtils {
+  private PractitionerUtils() {}
+
   public static Optional<ContactPoint> getFirstEmailFromPractitioner(Practitioner practitioner) {
     return practitioner.getTelecom().stream()
         .filter(com -> com.getSystem().equals(ContactPointSystem.EMAIL))
