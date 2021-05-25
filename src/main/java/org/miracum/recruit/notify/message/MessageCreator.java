@@ -1,27 +1,34 @@
-package org.miracum.recruit.notify.message.create;
+package org.miracum.recruit.notify.message;
+
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import javax.mail.MessagingException;
 import org.apache.logging.log4j.util.Strings;
 import org.hl7.fhir.r4.model.CodeableConcept;
+import org.hl7.fhir.r4.model.Coding;
 import org.hl7.fhir.r4.model.CommunicationRequest;
+import org.hl7.fhir.r4.model.CommunicationRequest.CommunicationPriority;
+import org.hl7.fhir.r4.model.CommunicationRequest.CommunicationRequestPayloadComponent;
 import org.hl7.fhir.r4.model.CommunicationRequest.CommunicationRequestStatus;
 import org.hl7.fhir.r4.model.ContactPoint;
-import org.hl7.fhir.r4.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.r4.model.Identifier;
 import org.hl7.fhir.r4.model.Practitioner;
 import org.hl7.fhir.r4.model.Reference;
+import org.hl7.fhir.r4.model.StringType;
 import org.miracum.recruit.notify.FhirServerProvider;
 import org.miracum.recruit.notify.fhirserver.FhirSystemsConfig;
 import org.miracum.recruit.notify.fhirserver.MessageTransmitter;
-import org.miracum.recruit.notify.logging.LogMethodCalls;
 import org.miracum.recruit.notify.mailconfig.MailerConfig;
 import org.miracum.recruit.notify.mailconfig.UserConfig;
 import org.miracum.recruit.notify.mailsender.MailInfo;
 import org.miracum.recruit.notify.mailsender.MailSender;
 import org.miracum.recruit.notify.mailsender.NotifyInfo;
 import org.miracum.recruit.notify.practitioner.PractitionerFilter;
+import org.miracum.recruit.notify.practitioner.PractitionerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +39,8 @@ import org.thymeleaf.TemplateEngine;
 /** Service to create communication resources in target fhir server. */
 @Service
 public class MessageCreator {
-
   private static final Logger LOG = LoggerFactory.getLogger(MessageCreator.class);
+
   private final JavaMailSender javaMailSender;
   private final TemplateEngine templateEngine;
   private final PractitionerFilter practitionerFilter;
@@ -68,9 +75,8 @@ public class MessageCreator {
    * Based on acronym and list id sending messages to target fhir server to store messages as
    * communication request resources.
    */
-  @LogMethodCalls
   public void temporaryStoreMessagesInFhir(String acronym, String listId) {
-    LOG.info("create messages in queue for trial: {}", acronym);
+    LOG.info("create messages in queue for {}", kv("trial", acronym));
 
     List<Practitioner> practitionersFhir = retrieveSubscribersByAcronym(acronym);
 
@@ -87,7 +93,7 @@ public class MessageCreator {
     List<CommunicationRequest> messagesDelayed =
         createMessages(acronym, listId, practitionerListContainer.getScheduledRecipients());
 
-    NotifyInfo notifyInfo = generateNotifyInfo(acronym, listId);
+    var notifyInfo = generateNotifyInfo(acronym, listId);
 
     if (!messagesAdHoc.isEmpty()) {
       sendMessagesAdHoc(messagesAdHoc, practitionerListContainer.getAdHocRecipients(), notifyInfo);
@@ -99,15 +105,14 @@ public class MessageCreator {
   }
 
   private NotifyInfo generateNotifyInfo(String acronym, String listId) {
-    NotifyInfo notifyInfo = new NotifyInfo();
+    var notifyInfo = new NotifyInfo();
     notifyInfo.setStudyAcronym(acronym);
     notifyInfo.setScreeningListLink(mailerConfig.getLinkTemplate().replace("[list_id]", listId));
     return notifyInfo;
   }
 
   private List<Practitioner> retrieveSubscribersByAcronym(String acronym) {
-
-    LOG.debug("retrieve subscribers by acronym: {}", acronym);
+    LOG.debug("retrieve subscribers by {}", kv("trial", acronym));
 
     List<String> subscribers = readSubscribersFromConfig(acronym);
 
@@ -115,11 +120,11 @@ public class MessageCreator {
       return new ArrayList<>();
     }
 
-    return fhirServerProvider.getSubscriberObjectsFromFhir(subscribers);
+    return fhirServerProvider.getPractitionersByEmail(subscribers);
   }
 
   private List<String> readSubscribersFromConfig(String acronym) {
-    LOG.info("retrieve subscribers from config for acronym \"{}\"", acronym);
+    LOG.info("retrieve subscribers from config for {}", kv("trial", acronym));
 
     var subscribers = new ArrayList<String>();
 
@@ -129,9 +134,9 @@ public class MessageCreator {
 
         for (var subscriptions : trial.getSubscriptions()) {
           LOG.info(
-              "add subscriber email={} for trial={} to list",
-              subscriptions.getEmail(),
-              trial.getAcronym());
+              "add subscriber {} for {} to list",
+              kv("email", subscriptions.getEmail()),
+              kv("trial", trial.getAcronym()));
           subscribers.add(subscriptions.getEmail());
         }
       }
@@ -141,42 +146,57 @@ public class MessageCreator {
   }
 
   /**
-   * Create communciation request resources by list of practitioners that should receive an email
-   * and acronym and list id (will be linked in email body).
+   * Create CommunicationRequest resources by list of practitioners that should receive an email and
+   * acronym and list id (will be linked in email body).
    */
   public List<CommunicationRequest> createMessages(
-      String acronym, String listId, List<Practitioner> practitionersFhir) {
+      String acronym, String listId, List<Practitioner> practitioners) {
 
     LOG.debug(
-        "create fhir communication resources for trial: {} for {} practitioners",
-        acronym,
-        practitionersFhir.size());
+        "creating FHIR CommunicationRequest resources about {} for {} practitioners",
+        kv("trial", acronym),
+        kv("numOfPractitioners", practitioners.size()));
 
-    List<CommunicationRequest> result = new ArrayList<>();
+    var result = new ArrayList<CommunicationRequest>();
 
-    for (Practitioner practitioner : practitionersFhir) {
+    for (var practitioner : practitioners) {
+      var practitionerEmail = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
 
       LOG.debug(
-          "receiver for trial \"{}\": {}",
-          acronym,
-          practitioner.getIdentifierFirstRep().getValue());
-      LOG.debug("message for {}", practitioner.getIdentifierFirstRep().getValue());
+          "creating CommunicationRequest for {} with recipient {} ({})",
+          kv("trial", acronym),
+          kv("practitionerId", practitioner.getIdElement().getIdPart()),
+          kv("practitionerEmail", practitionerEmail.orElse(new ContactPoint()).getValue()));
 
-      CommunicationRequest communication = new CommunicationRequest();
-      communication.setStatus(CommunicationRequestStatus.ACTIVE);
+      var categoryCoding =
+          new Coding()
+              .setSystem(fhirSystemConfig.getCommunicationCategory())
+              .setCode("notification");
 
-      Reference practitionerReference = new Reference();
-      practitionerReference.setReference("Practitioner/" + practitioner.getIdElement().getIdPart());
+      var payload = createPayload(acronym);
+      var communication =
+          new CommunicationRequest()
+              .setStatus(CommunicationRequestStatus.ACTIVE)
+              .setPriority(CommunicationPriority.ROUTINE)
+              .addCategory(new CodeableConcept().addCoding(categoryCoding))
+              .addPayload(payload)
+              .setAuthoredOn(new Date());
+
+      var practitionerReference =
+          new Reference(practitioner.getIdElement().toUnqualifiedVersionless());
+      practitionerEmail.ifPresent(
+          contactPoint -> practitionerReference.setDisplay(contactPoint.getValue()));
       communication.addRecipient(practitionerReference);
 
-      Reference screeningListReference = new Reference();
-      screeningListReference.setReference("List/" + listId);
+      // TODO: replace with strongly typed IIdElement (see above)
+      var screeningListReference =
+          new Reference().setReference("List/" + listId).setDisplay(acronym);
       communication.addAbout(screeningListReference);
 
-      List<CodeableConcept> reasonCodeList = createReasonCodeByAcronym(acronym);
+      var reasonCodeList = createReasonCodeFromAcronym(acronym);
       communication.setReasonCode(reasonCodeList);
 
-      List<Identifier> identifierList = createAppSpecificIdentifier();
+      var identifierList = createAppSpecificIdentifier();
       communication.setIdentifier(identifierList);
 
       result.add(communication);
@@ -185,33 +205,40 @@ public class MessageCreator {
     return result;
   }
 
-  private List<CodeableConcept> createReasonCodeByAcronym(String acronym) {
-    List<CodeableConcept> reasonCodeList = new ArrayList<>();
-    CodeableConcept reasonCode = new CodeableConcept();
-    reasonCode.setText(acronym);
-    reasonCodeList.add(reasonCode);
-    return reasonCodeList;
+  private CommunicationRequestPayloadComponent createPayload(String acronym) {
+    var payloadText =
+        new StringType()
+            .setValue(
+                String.format("Notification about potential new study candidates for %s", acronym));
+    return new CommunicationRequestPayloadComponent().setContent(payloadText);
+  }
+
+  private List<CodeableConcept> createReasonCodeFromAcronym(String acronym) {
+    var reasonCode = new CodeableConcept().setText(acronym);
+    return List.of(reasonCode);
   }
 
   private List<Identifier> createAppSpecificIdentifier() {
-    Identifier identifier = new Identifier();
-    identifier.setSystem(fhirSystemConfig.getCommunication());
-
-    UUID communicationUuid = UUID.randomUUID();
-
-    identifier.setValue(communicationUuid.toString());
-    List<Identifier> identifierList = new ArrayList<>();
-    identifierList.add(identifier);
-    return identifierList;
+    var communicationUuid = UUID.randomUUID();
+    var identifier =
+        new Identifier()
+            .setSystem(fhirSystemConfig.getCommunication())
+            .setValue(communicationUuid.toString());
+    return List.of(identifier);
   }
 
+  // TODO: is there a potential race-condition between these calls?
+  // TODO: consider refactoring this to a conditional-create tx
   private void storeMessagesInFhir(List<CommunicationRequest> messages) {
+    var alreadyPreparedMessages = fhirServerProvider.getPreparedMessages();
+    LOG.debug(
+        "{} messages are pending in total",
+        kv("numPendingMessages", alreadyPreparedMessages.size()));
+    var extractedMessages = extractMessagesToPrepare(messages, alreadyPreparedMessages);
 
-    List<CommunicationRequest> alreadyPreparedMessages = fhirServerProvider.getPreparedMessages();
-
-    List<CommunicationRequest> extractedMessages =
-        extractMessagesToPrepare(messages, alreadyPreparedMessages);
-
+    LOG.debug(
+        "adding {} new CommunicationRequests to the server",
+        kv("numNewMessages", extractedMessages.size()));
     messageTransmitter.transmit(extractedMessages);
   }
 
@@ -219,13 +246,11 @@ public class MessageCreator {
       List<CommunicationRequest> messages, List<CommunicationRequest> alreadyPreparedMessages) {
     List<CommunicationRequest> extractedMessages = new ArrayList<>();
 
-    for (CommunicationRequest messageToPrepare : messages) {
+    for (var messageToPrepare : messages) {
+      var idPartReceiver =
+          messageToPrepare.getRecipientFirstRep().getReferenceElement().getIdPart();
 
-      String referenceIdReceiver = messageToPrepare.getRecipientFirstRep().getReference();
-      String idPartReceiver =
-          referenceIdReceiver.substring(referenceIdReceiver.lastIndexOf("/") + 1);
-
-      boolean messageIsAlreadyPrepared =
+      var messageIsAlreadyPrepared =
           checkIfMessageIsAlreadyPrepared(
               alreadyPreparedMessages, messageToPrepare, idPartReceiver);
 
@@ -236,64 +261,61 @@ public class MessageCreator {
     return extractedMessages;
   }
 
-  private Boolean checkIfMessageIsAlreadyPrepared(
+  private boolean checkIfMessageIsAlreadyPrepared(
       List<CommunicationRequest> alreadyPreparedMessages,
       CommunicationRequest messageToPrepare,
       String idPartReceiver) {
+    var topic = messageToPrepare.getReasonCodeFirstRep().getText();
 
-    String topic = messageToPrepare.getReasonCodeFirstRep().getText();
+    for (var messageAlreadyPrepared : alreadyPreparedMessages) {
+      var topicAlreadyExists =
+          messageAlreadyPrepared.getReasonCodeFirstRep().getText().equals(topic);
+      var receiverAlreadyExists =
+          checkIfMessageHasMatchingRecipient(messageAlreadyPrepared, idPartReceiver);
 
-    LOG.info("check if message exists for idPartReceiver: {} and topic: {}", idPartReceiver, topic);
-
-    var messageIsAlreadyPrepared = false;
-
-    var topicAlreadyExists = false;
-    var receiverAlreadyExists = false;
-
-    for (CommunicationRequest messagesAlreadyPrepared : alreadyPreparedMessages) {
-
-      topicAlreadyExists = messagesAlreadyPrepared.getReasonCodeFirstRep().getText().equals(topic);
-
-      receiverAlreadyExists =
-          checkIfMessageForRecipientIsAlreadyRegistered(messageToPrepare, idPartReceiver);
+      LOG.debug(
+          "checking if {} is already pending for {} and {}: {} {}",
+          kv("communicationRequestId", messageAlreadyPrepared.getIdElement().getIdPart()),
+          kv("practitioner", idPartReceiver),
+          kv("acronym", topic),
+          kv("topicAlreadyExists", topicAlreadyExists),
+          kv("receiverAlreadyExists", receiverAlreadyExists));
 
       if (topicAlreadyExists && receiverAlreadyExists) {
-        messageIsAlreadyPrepared = true;
-        break;
+        return true;
       }
     }
 
-    LOG.debug("messageIsAlreadyPrepared :{}", messageIsAlreadyPrepared);
-    return messageIsAlreadyPrepared;
+    return false;
   }
 
-  private Boolean checkIfMessageForRecipientIsAlreadyRegistered(
-      CommunicationRequest messageToPrepare, String idPartReceiver) {
-    var messageIsAlreadyPrepared = false;
-    List<Reference> recipientList = messageToPrepare.getRecipient();
-    for (Reference reference : recipientList) {
+  private boolean checkIfMessageHasMatchingRecipient(
+      CommunicationRequest message, String recipientIdToTest) {
+    var recipientList = message.getRecipient();
+    for (var reference : recipientList) {
       if (reference.getReference().contains("Practitioner")) {
-        String referenceString = reference.getReference();
-        String practitionerId = referenceString.substring(referenceString.lastIndexOf("/") + 1);
+        var recipientId = reference.getReferenceElement().getIdPart();
+        LOG.debug(
+            "check if current {} {} matches {}",
+            kv("communicationRequestId", message.getIdElement().getIdPart()),
+            kv("recipientId", recipientId),
+            kv("recipientIdToTest", recipientIdToTest));
 
-        if (idPartReceiver.equals(practitionerId)) {
-          LOG.debug("message already prepared for idPartReceiver {}", idPartReceiver);
-          messageIsAlreadyPrepared = true;
-          break;
+        if (recipientIdToTest.equals(recipientId)) {
+          return true;
         }
       }
     }
-    return messageIsAlreadyPrepared;
+
+    return false;
   }
 
   // TODO: consolidate redundant code with MessageDistributor.distribute
   private void sendMessagesAdHoc(
       List<CommunicationRequest> messagesAdHoc, List<Practitioner> list, NotifyInfo notifyInfo) {
 
-    for (CommunicationRequest message : messagesAdHoc) {
-
+    for (var message : messagesAdHoc) {
       var email = retrieveEmailAddressOfReceiver(list, message);
-
       if (Strings.isBlank(email)) {
         LOG.error("receiver not present - mail could not be sent!");
         return;
@@ -305,8 +327,18 @@ public class MessageCreator {
       mailInfo.setSubject(
           mailerConfig.getSubject().replace("[study_acronym]", notifyInfo.getStudyAcronym()));
 
+      LOG.debug(
+          "sending immediate notification mail {} {} with {}",
+          kv("from", mailInfo.getFrom()),
+          kv("to", mailInfo.getTo()),
+          kv("subject", mailInfo.getSubject()));
+
       var mailSender = new MailSender(javaMailSender, templateEngine);
-      mailSender.sendMail(notifyInfo, mailInfo);
+      try {
+        mailSender.sendMail(notifyInfo, mailInfo);
+      } catch (MessagingException e) {
+        LOG.error("failed to send message", e);
+      }
     }
   }
 
@@ -315,7 +347,7 @@ public class MessageCreator {
 
     var practitionerReference = message.getRecipientFirstRep().getReferenceElement();
 
-    LOG.debug("practitioner reference: {}", practitionerReference);
+    LOG.debug("retrieving email address for {}", kv("practitioner", practitionerReference));
 
     var practitioner =
         practitioners.stream()
@@ -326,10 +358,8 @@ public class MessageCreator {
       return null;
     }
 
-    return practitioner.get().getTelecom().stream()
-        .filter(telecom -> telecom.getSystem() == ContactPointSystem.EMAIL)
+    return PractitionerUtils.getFirstEmailFromPractitioner(practitioner.get())
         .map(ContactPoint::getValue)
-        .findFirst()
         .orElse(null);
   }
 }

@@ -5,8 +5,7 @@ notify:
     maxAttempts: 10
   mailer:
     from: "noreply@example.com"
-    linktemplate: "http://localhost:8083/recommendations/[list_id]"
-    subject: "MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die Studie [study_acronym]"
+    link-template: "http://localhost:8083/recommendations/[list_id]"
   rules:
     schedules:
       everyMorning: "0 0 8 1/1 * ? *"
@@ -14,6 +13,7 @@ notify:
       everyHour: "0 0 0/1 1/1 * ? *"
       everyFiveMinutes: "0 0/5 * 1/1 * ? *"
       every5Minutes: "0 0/5 * 1/1 * ? *"
+      everyMinute: "0 0/1 * 1/1 * ? *"
 
     trials:
       - acronym: "*"
@@ -27,13 +27,10 @@ notify:
             notify: "everyMinute"
           - email: "everyHour@example.com"
             notify: "everyHour"
+          - email: "prosa-every-5-minutes@example.com"
+            notify: "every5Minutes"
             # a lack of a notify element means the user will be notified immediately.
           - email: "immediately-prosa@example.com"
-        allowed:
-          groups:
-            - "diz-uc1"
-          users:
-            - "you@example.com"
       - acronym: "AMICA"
         subscriptions:
           - email: "immediately-amica@example.com"
@@ -43,11 +40,6 @@ notify:
             notify: "everyHour"
           - email: "everyFiveMinutes@example.com"
             notify: "everyFiveMinutes"
-        allowed:
-          groups:
-            - "diz-uc1"
-          users:
-            - "you@example.com"
 spring:
   mail:
     host: localhost
@@ -56,7 +48,7 @@ spring:
     password: "" # pragma: allowlist secret
     properties:
       mail:
-        debug: true
+        debug: false
 
 webhook:
   endpoint: "http://host.docker.internal:8080/on-list-change"

@@ -10,7 +10,7 @@ COPY --chown=gradle:gradle . .
 RUN gradle build --info && \
     gradle jacocoTestReport && \
     awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print 100*covered/instructions, "% covered" }' build/jacoco/coverage.csv && \
-    java -Djarmode=layertools -jar build/libs/*.jar extract
+    java -Djarmode=layertools -jar build/libs/notify-0.0.1-SNAPSHOT.jar extract
 
 FROM gcr.io/distroless/java-debian10:11
 WORKDIR /opt/notify

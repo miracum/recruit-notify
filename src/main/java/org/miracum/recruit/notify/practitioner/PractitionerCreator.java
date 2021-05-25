@@ -1,6 +1,5 @@
 package org.miracum.recruit.notify.practitioner;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,27 +19,20 @@ import org.springframework.stereotype.Service;
 /** Create a list of FHIR Practitioners from the users config. */
 @Service
 public class PractitionerCreator {
-
   private static final Logger LOG = LoggerFactory.getLogger(PractitionerCreator.class);
 
-  private final FhirSystemsConfig fhirSystemConfig;
+  private final FhirSystemsConfig fhirSystems;
   private final UserConfig users;
 
   @Autowired
-  public PractitionerCreator(FhirSystemsConfig fhirSystemConfig, UserConfig users) {
-    this.fhirSystemConfig = fhirSystemConfig;
+  public PractitionerCreator(FhirSystemsConfig fhirSystems, UserConfig users) {
+    this.fhirSystems = fhirSystems;
     this.users = users;
   }
 
   public List<Practitioner> create() {
-    LOG.info("create practitioner list for use as reference in communication resource");
-
-    return extractPractitionersFromSubscriptionConfig();
-  }
-
-  private List<Practitioner> extractPractitionersFromSubscriptionConfig() {
-    LOG.info("extract practitioners from subscriptions config");
-
+    LOG.info(
+        "creating list of practitioners to be referenced by the CommunicationRequest resources");
     var emailSet = extractEmailAddressesFromSubscriptions();
 
     return emailSet.stream()
@@ -66,22 +58,11 @@ public class PractitionerCreator {
             .setSystem(ContactPointSystem.EMAIL)
             .setValue(email)
             .setUse(ContactPointUse.WORK);
-    var identifiers = createFhirIdentifierListFromEmail(email);
-    return new Practitioner().setTelecom(List.of(emailContactPoint)).setIdentifier(identifiers);
-  }
+    var identifier = new Identifier().setSystem(fhirSystems.getSubscriberId()).setValue(email);
 
-  private List<Identifier> createFhirIdentifierListFromEmail(String email) {
-    List<Identifier> practitionerNames = new ArrayList<>();
-    Identifier practitionerName = createFhirIdentifierFromEmail(email);
-    practitionerNames.add(practitionerName);
-    return practitionerNames;
-  }
-
-  private Identifier createFhirIdentifierFromEmail(String email) {
-    LOG.info("receiver: {}", email);
-    Identifier practitionerName = new Identifier();
-    practitionerName.setValue(email);
-    practitionerName.setSystem(fhirSystemConfig.getSubscriberSystem());
-    return practitionerName;
+    return new Practitioner()
+        .setActive(true)
+        .addIdentifier(identifier)
+        .setTelecom(List.of(emailContactPoint));
   }
 }

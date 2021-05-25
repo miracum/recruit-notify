@@ -1,7 +1,6 @@
 package org.miracum.recruit.notify.scheduler;
 
-import org.miracum.recruit.notify.logging.LogMethodCalls;
-import org.miracum.recruit.notify.message.forward.MessageDistributor;
+import org.miracum.recruit.notify.message.MessageDistributor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +15,6 @@ public class NotifyMessageSchedulerService {
   }
 
   /** Job to distribute messages based on jobKey (trigger name in config) will be executed. */
-  @LogMethodCalls
   public void executeMessageDistributionJob(String jobKey) {
     messageDistributor.distribute(jobKey);
   }

@@ -11,8 +11,7 @@ import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CommunicationRequest;
 import org.hl7.fhir.r4.model.Practitioner;
 import org.hl7.fhir.r4.model.Subscription;
-import org.miracum.recruit.notify.fhirserver.PractitionerTransmitterDefault;
-import org.miracum.recruit.notify.logging.LogMethodCalls;
+import org.miracum.recruit.notify.fhirserver.PractitionerTransmitter;
 import org.miracum.recruit.notify.mailconfig.UserConfig;
 import org.miracum.recruit.notify.practitioner.PractitionerCreator;
 import org.slf4j.Logger;
@@ -38,7 +37,7 @@ public class Startup {
   private final RetryTemplate retryTemplate;
   private final String criteria;
   private final UserConfig userConfig;
-  private final PractitionerTransmitterDefault practitionerTransmitter;
+  private final PractitionerTransmitter practitionerTransmitter;
   private final PractitionerCreator practitionerCreator;
   private final FhirServerProvider fhirServerProvider;
   private final IGenericClient fhirClient;
@@ -53,7 +52,7 @@ public class Startup {
       @Value("${webhook.endpoint}") URL webhookEndpoint,
       FhirServerProvider fhirServerProvider,
       PractitionerCreator practitionerCreator,
-      PractitionerTransmitterDefault practitionerTransmitter,
+      PractitionerTransmitter practitionerTransmitter,
       IGenericClient fhirClient,
       UserConfig userConfig,
       @Value("${fhir.subscription.criteria}") String criteria)
@@ -155,7 +154,6 @@ public class Startup {
         .execute();
   }
 
-  @LogMethodCalls
   private void loadReceiverList(RetryTemplate retryTemplate) {
     retryTemplate.execute(retryContext -> createPractitionerListInFhir());
   }

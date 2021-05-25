@@ -9,13 +9,13 @@ import org.miracum.recruit.notify.mailconfig.UserConfig;
 import org.miracum.recruit.notify.mailconfig.UserConfig.Subscription;
 import org.miracum.recruit.notify.mailconfig.UserConfig.Trial;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(classes = {FhirSystemsConfig.class})
 @ActiveProfiles("test")
-@EnableAutoConfiguration
+@SpringBootTest(classes = {FhirSystemsConfig.class})
+@EnableConfigurationProperties(value = {FhirSystemsConfig.class})
 class PractitionerCreatorTest {
 
   @Autowired FhirSystemsConfig fhirSystemsConfig;
