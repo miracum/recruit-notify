@@ -114,6 +114,12 @@ public class MessageDistributor {
 
       mailInfo.setTo(emailAddress);
 
+      LOG.debug(
+          "sending scheduled notification mail {} {} with {}",
+          kv("from", mailInfo.getFrom()),
+          kv("to", mailInfo.getTo()),
+          kv("subject", mailInfo.getSubject()));
+
       var mailSender = new MailSender(appJavaMailSender, emailTemplateEngine);
       try {
         mailSender.sendMail(notifyInfo, mailInfo);

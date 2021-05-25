@@ -91,15 +91,13 @@ public class FhirServerProvider {
     return fhirClient.read().resource(ResearchStudy.class).withId(id).execute();
   }
 
-  /**
-   * Query list of practitioners from target fhir server bi list of unique identifiers in given fhir
-   * system.
-   */
+  /** Query list of practitioners from server by their email address */
+  // TODO: refactor to use a single search bundle request instead of multiple search invocations
   public List<Practitioner> getPractitionersByEmail(List<String> subscribers) {
     var practitionerObjects = new ArrayList<Practitioner>();
 
     for (var subscriberName : subscribers) {
-      LOG.debug("processing {}", kv("subscriberName", subscriberName));
+      LOG.debug("fetching FHIR Practitioner {}", kv("subscriberName", subscriberName));
 
       var listBundlePractitioners =
           fhirClient
@@ -113,11 +111,18 @@ public class FhirServerProvider {
           BundleUtil.toListOfResourcesOfType(
               fhirClient.getFhirContext(), listBundlePractitioners, Practitioner.class);
 
-      if (!practitionerList.isEmpty()) {
-        practitionerObjects.add(practitionerList.get(0));
-      } else {
-        LOG.warn("Failed to retrieve Practitioner resource with {}", kv("email", subscriberName));
+      if (practitionerList.isEmpty()) {
+        LOG.warn("no Practitioner resource with {} found", kv("email", subscriberName));
+        return List.of();
       }
+
+      if (practitionerList.size() > 1) {
+        LOG.warn(
+            "found more than one practitioner with {}. Returning the first one.",
+            kv("email", subscriberName));
+      }
+
+      practitionerObjects.add(practitionerList.get(0));
     }
 
     return practitionerObjects;
@@ -127,6 +132,8 @@ public class FhirServerProvider {
    * Query active CommunicationRequests from FHIR server for the given list of subscriber's email
    * addresses
    */
+  // TODO: instead of N x M loops, only fetch the active communication requests for a given
+  //       subscriber.
   public List<CommunicationRequest> getOpenMessagesForSubscribers(List<String> subscribers) {
     LOG.info("retrieving open messages for {}", kv("numSubscribers", subscribers.size()));
 
@@ -147,16 +154,17 @@ public class FhirServerProvider {
             var practitioner = (Practitioner) reference.getResource();
 
             LOG.debug(
-                "checking if {} matches {} {}",
+                "checking if {} matches with {} {} for {}",
                 kv("subscriber", subscriber),
                 kv("communicationRequestReason", message.getReasonCodeFirstRep().getText()),
-                kv("practitionerEmail", practitioner.getTelecomFirstRep().getValue()));
+                kv("practitionerEmail", practitioner.getTelecomFirstRep().getValue()),
+                kv("message", message.getIdElement().getIdPart()));
 
             if (PractitionerUtils.hasEmail(practitioner, subscriber)) {
               LOG.debug(
                   "add {} to list for {} ({})",
                   kv("practitioner", practitioner.getIdElement().getIdPart()),
-                  kv("message", message.getId()),
+                  kv("message", message.getIdElement().getIdPart()),
                   kv("subscriber", subscriber));
               messages.add(message);
             }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.CommunicationRequest;
+import org.hl7.fhir.r4.model.ResourceType;
 import org.miracum.recruit.notify.FhirServerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,13 +44,14 @@ public class MessageTransmitter {
       LOG.debug(
           "adding CommunicationRequest for {} as {} to transaction",
           kv("topic", topic),
-          kv("uuid", messageUuid));
+          kv("messageIdentifier", message.getIdentifierFirstRep().getValue()));
+
       bundle
           .addEntry()
           .setResource(message)
           .setFullUrl("urn:uuid:" + messageUuid)
           .getRequest()
-          .setUrl("CommunicationRequest")
+          .setUrl(ResourceType.CommunicationRequest.name())
           .setMethod(Bundle.HTTPVerb.POST);
     }
 

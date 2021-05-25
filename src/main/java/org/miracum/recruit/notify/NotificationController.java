@@ -65,7 +65,7 @@ public class NotificationController {
   @PutMapping(value = "/on-list-change/List/{id}", consumes = "application/fhir+json")
   public void onListChange(
       @PathVariable(value = "id") String resourceId, @RequestBody String body) {
-    LOG.info("onListChange invoked for list with id {}", resourceId);
+    LOG.info("onListChange invoked for {}", kv("list", resourceId));
 
     if (body == null) {
       LOG.error("request body is null");
@@ -101,10 +101,10 @@ public class NotificationController {
       return null;
     }
 
-    MDC.put("listId", list.getId());
+    MDC.put("list", list.getId());
 
     if (!hasPatientListChanged(list)) {
-      LOG.info("list {} hasn't changed since last time", list.getId());
+      LOG.info("list hasn't changed since last time");
       return null;
     }
 
@@ -112,13 +112,13 @@ public class NotificationController {
 
     var researchSubjectList = fhirServer.getResearchSubjectsFromList(list);
     if (!hasPatientListAnyCandidates(researchSubjectList)) {
-      LOG.info("{} doesn't have any subjects with status 'candidate'", kv("list", list.getId()));
+      LOG.info("list doesn't contain any subjects with status 'candidate'");
       return null;
     }
 
     final var acronym = retrieveStudyAcronym(studyReference);
     if (Strings.isNullOrEmpty(acronym)) {
-      LOG.error("couldn't get acronym for {}", kv("list", list.getId()));
+      LOG.error("couldn't get acronym from list");
       return null;
     }
 
