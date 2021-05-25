@@ -1,6 +1,6 @@
 services:
   fhir:
-    image: ghcr.io/chgl/hapifhir/hapi-fhir-jpaserver-starter:v5.3.0-distroless
+    image: ghcr.io/chgl/hapi/hapi-fhir-jpaserver-starter:5.5.0-pre1-snapshot
     environment:
       HAPI_FHIR_VALIDATION_REQUESTS_ENABLED: "true"
       HAPI_FHIR_SUBSCRIPTION_RESTHOOK_ENABLED: "true"
