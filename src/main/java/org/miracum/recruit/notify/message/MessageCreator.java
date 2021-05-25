@@ -150,22 +150,23 @@ public class MessageCreator {
    * acronym and list id (will be linked in email body).
    */
   public List<CommunicationRequest> createMessages(
-      String acronym, String listId, List<Practitioner> practitionersFhir) {
+      String acronym, String listId, List<Practitioner> practitioners) {
 
     LOG.debug(
-        "creating FHIR CommunicationRequest resources for {} for {} practitioners",
+        "creating FHIR CommunicationRequest resources about {} for {} practitioners",
         kv("trial", acronym),
-        kv("numOfPractitioners", practitionersFhir.size()));
+        kv("numOfPractitioners", practitioners.size()));
 
     var result = new ArrayList<CommunicationRequest>();
 
-    for (var practitioner : practitionersFhir) {
-      LOG.debug(
-          "receiver for {}: {}",
-          kv("trial", acronym),
-          kv("practitioner", practitioner.getIdElement().getIdPart()));
-
+    for (var practitioner : practitioners) {
       var practitionerEmail = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
+
+      LOG.debug(
+          "creating CommunicationRequest for {} with recipient {} ({})",
+          kv("trial", acronym),
+          kv("practitionerId", practitioner.getIdElement().getIdPart()),
+          kv("practitionerEmail", practitionerEmail.orElse(new ContactPoint()).getValue()));
 
       var categoryCoding =
           new Coding()
@@ -181,12 +182,13 @@ public class MessageCreator {
               .addPayload(payload)
               .setAuthoredOn(new Date());
 
-      var practitionerReference = new Reference();
-      practitionerReference.setReference("Practitioner/" + practitioner.getIdElement().getIdPart());
+      var practitionerReference =
+          new Reference(practitioner.getIdElement().toUnqualifiedVersionless());
       practitionerEmail.ifPresent(
           contactPoint -> practitionerReference.setDisplay(contactPoint.getValue()));
       communication.addRecipient(practitionerReference);
 
+      // TODO: replace with strongly typed IIdElement (see above)
       var screeningListReference =
           new Reference().setReference("List/" + listId).setDisplay(acronym);
       communication.addAbout(screeningListReference);
@@ -225,11 +227,18 @@ public class MessageCreator {
     return List.of(identifier);
   }
 
+  // TODO: is there a potential race-condition between these calls?
+  // TODO: consider refactoring this to a conditional-create tx
   private void storeMessagesInFhir(List<CommunicationRequest> messages) {
     var alreadyPreparedMessages = fhirServerProvider.getPreparedMessages();
-
+    LOG.debug(
+        "{} messages are pending in total",
+        kv("numPendingMessages", alreadyPreparedMessages.size()));
     var extractedMessages = extractMessagesToPrepare(messages, alreadyPreparedMessages);
 
+    LOG.debug(
+        "adding {} new CommunicationRequests to the server",
+        kv("numNewMessages", extractedMessages.size()));
     messageTransmitter.transmit(extractedMessages);
   }
 
@@ -238,8 +247,8 @@ public class MessageCreator {
     List<CommunicationRequest> extractedMessages = new ArrayList<>();
 
     for (var messageToPrepare : messages) {
-      var referenceIdReceiver = messageToPrepare.getRecipientFirstRep().getReference();
-      var idPartReceiver = referenceIdReceiver.substring(referenceIdReceiver.lastIndexOf("/") + 1);
+      var idPartReceiver =
+          messageToPrepare.getRecipientFirstRep().getReferenceElement().getIdPart();
 
       var messageIsAlreadyPrepared =
           checkIfMessageIsAlreadyPrepared(
@@ -258,48 +267,47 @@ public class MessageCreator {
       String idPartReceiver) {
     var topic = messageToPrepare.getReasonCodeFirstRep().getText();
 
-    LOG.info(
-        "check if message exists for {} and {}",
-        kv("practitioner", idPartReceiver),
-        kv("acronym", topic));
-
-    var messageIsAlreadyPrepared = false;
-
-    var topicAlreadyExists = false;
-    var receiverAlreadyExists = false;
-
     for (var messageAlreadyPrepared : alreadyPreparedMessages) {
-      topicAlreadyExists = messageAlreadyPrepared.getReasonCodeFirstRep().getText().equals(topic);
-      receiverAlreadyExists =
-          checkIfMessageForRecipientIsAlreadyRegistered(messageToPrepare, idPartReceiver);
+      var topicAlreadyExists =
+          messageAlreadyPrepared.getReasonCodeFirstRep().getText().equals(topic);
+      var receiverAlreadyExists =
+          checkIfMessageHasMatchingRecipient(messageAlreadyPrepared, idPartReceiver);
+
+      LOG.debug(
+          "checking if {} is already pending for {} and {}: {} {}",
+          kv("communicationRequestId", messageAlreadyPrepared.getIdElement().getIdPart()),
+          kv("practitioner", idPartReceiver),
+          kv("acronym", topic),
+          kv("topicAlreadyExists", topicAlreadyExists),
+          kv("receiverAlreadyExists", receiverAlreadyExists));
 
       if (topicAlreadyExists && receiverAlreadyExists) {
-        messageIsAlreadyPrepared = true;
-        break;
+        return true;
       }
     }
 
-    LOG.debug("{}", kv("messageIsAlreadyPrepared", messageIsAlreadyPrepared));
-    return messageIsAlreadyPrepared;
+    return false;
   }
 
-  private Boolean checkIfMessageForRecipientIsAlreadyRegistered(
-      CommunicationRequest messageToPrepare, String idPartReceiver) {
-    var messageIsAlreadyPrepared = false;
-    var recipientList = messageToPrepare.getRecipient();
+  private boolean checkIfMessageHasMatchingRecipient(
+      CommunicationRequest message, String recipientIdToTest) {
+    var recipientList = message.getRecipient();
     for (var reference : recipientList) {
       if (reference.getReference().contains("Practitioner")) {
-        var practitionerId = reference.getReferenceElement().getIdPart();
+        var recipientId = reference.getReferenceElement().getIdPart();
+        LOG.debug(
+            "check if current {} {} matches {}",
+            kv("communicationRequestId", message.getIdElement().getIdPart()),
+            kv("recipientId", recipientId),
+            kv("recipientIdToTest", recipientIdToTest));
 
-        if (idPartReceiver.equals(practitionerId)) {
-          LOG.debug("message already prepared for {}", kv("practitioner", idPartReceiver));
-          messageIsAlreadyPrepared = true;
-          break;
+        if (recipientIdToTest.equals(recipientId)) {
+          return true;
         }
       }
     }
 
-    return messageIsAlreadyPrepared;
+    return false;
   }
 
   // TODO: consolidate redundant code with MessageDistributor.distribute
@@ -318,6 +326,12 @@ public class MessageCreator {
       mailInfo.setTo(email);
       mailInfo.setSubject(
           mailerConfig.getSubject().replace("[study_acronym]", notifyInfo.getStudyAcronym()));
+
+      LOG.debug(
+          "sending immediate notification mail {} {} with {}",
+          kv("from", mailInfo.getFrom()),
+          kv("to", mailInfo.getTo()),
+          kv("subject", mailInfo.getSubject()));
 
       var mailSender = new MailSender(javaMailSender, templateEngine);
       try {

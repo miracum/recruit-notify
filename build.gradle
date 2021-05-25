@@ -14,9 +14,8 @@ version = "0.0.1-SNAPSHOT"
 sourceCompatibility = "11"
 
 configurations {
-    developmentOnly
-    runtimeClasspath {
-        extendsFrom developmentOnly
+    compileOnly {
+        extendsFrom annotationProcessor
     }
 }
 
@@ -25,7 +24,7 @@ repositories {
 }
 
 ext {
-    set("springCloudVersion", "2020.0.2")
+    set("springCloudVersion", "2020.0.1")
 }
 
 dependencies {
@@ -43,7 +42,7 @@ dependencies {
     implementation "ca.uhn.hapi.fhir:hapi-fhir-client:5.3.3"
     implementation "ca.uhn.hapi.fhir:hapi-fhir-structures-r4:5.3.3"
     implementation "ca.uhn.hapi.fhir:hapi-fhir-client-okhttp:5.3.3"
-    developmentOnly "org.springframework.boot:spring-boot-devtools:2.4.5"
+    implementation "ca.uhn.hapi.fhir:hapi-fhir-client-okhttp:5.3.3"
 
     implementation "io.jaegertracing:jaeger-client:1.6.0"
 
@@ -54,9 +53,9 @@ dependencies {
     implementation "io.opentracing.contrib:opentracing-spring-jaeger-cloud-starter:3.3.1"
     implementation "io.opentracing.contrib:opentracing-okhttp3:3.0.0"
 
-    testImplementation("org.springframework.boot:spring-boot-starter-test:2.4.5") {
-        exclude group: "org.junit.vintage", module: "junit-vintage-engine"
-    }
+    developmentOnly "org.springframework.boot:spring-boot-devtools"
+
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
     testImplementation "ognl:ognl:3.2.20"
 
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
