@@ -30,3 +30,22 @@ e2e:
   after_script:
     - docker-compose -p $CI_PROJECT_NAME-$CI_JOB_ID-e2e -f tests/e2e/docker-compose.yml logs
     - docker-compose -p $CI_PROJECT_NAME-$CI_JOB_ID-e2e -f tests/e2e/docker-compose.yml down --volumes --remove-orphans
+
+push to miracum registry:
+  stage: release
+  image: harbor.miracum.org/ci/docker:stable
+  # login to GHCR.io to pull the image before re-tagging it to harbor.miracum.org
+  before_script:
+    - echo $GHCR_REGISTRY_PASSWORD | docker login -u $GHCR_REGISTRY_USERNAME $CONTAINER_REGISTRY_HOST --password-stdin
+    - echo $MIRACUM_REGISTRY_PASSWORD | docker login -u $MIRACUM_REGISTRY_USERNAME $MIRACUM_CONTAINER_REGISTRY --password-stdin
+  after_script:
+    - docker logout $CONTAINER_REGISTRY_HOST
+    - docker logout $MIRACUM_CONTAINER_REGISTRY
+  script:
+    - test -f .NORELEASE && echo ".NORELEASE file detected. Not pushing to avoid creating non-immutable images." && exit 0
+    - VERSION=$(cat .VERSION)
+    - docker pull $IMAGE_PATH:$CI_COMMIT_SHORT_SHA
+    - docker tag $IMAGE_PATH:$CI_COMMIT_SHORT_SHA $MIRACUM_CONTAINER_REGISTRY$CONTAINER_PROJECT_PATH:v$VERSION
+    - docker push $MIRACUM_CONTAINER_REGISTRY$CONTAINER_PROJECT_PATH:v$VERSION
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master"
