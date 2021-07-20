@@ -1,13 +1,8 @@
 {
-  "extends": [":preserveSemverRanges", "group:all", "schedule:weekly"],
-  "groupName": "all dependencies",
-  "separateMajorMinor": true,
-  "groupSlug": "all",
-  "packageRules": [
-    {
-      "packagePatterns": ["*"],
-      "groupName": "all dependencies",
-      "groupSlug": "all"
-    }
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "group:allNonMajor",
+    "schedule:weekly"
   ]
 }
