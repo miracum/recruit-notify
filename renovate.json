@@ -4,5 +4,6 @@
     "config:base",
     "group:allNonMajor",
     "schedule:weekly"
-  ]
+  ],
+  "assigneesFromCodeOwners": true
 }
