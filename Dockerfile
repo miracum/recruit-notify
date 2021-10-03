@@ -12,7 +12,7 @@ RUN gradle build --info && \
     awk -F"," '{ instructions += $4 + $5; covered += $5 } END { print covered, "/", instructions, " instructions covered"; print 100*covered/instructions, "% covered" }' build/jacoco/coverage.csv && \
     java -Djarmode=layertools -jar build/libs/notify-0.0.1-SNAPSHOT.jar extract
 
-FROM gcr.io/distroless/java-debian10:11
+FROM gcr.io/distroless/java-debian11:11
 WORKDIR /opt/notify
 COPY --from=build /home/gradle/src/dependencies/ ./
 COPY --from=build /home/gradle/src/spring-boot-loader/ ./
