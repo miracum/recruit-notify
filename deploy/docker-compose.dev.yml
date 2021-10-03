@@ -1,6 +1,6 @@
 services:
   fhir:
-    image: ghcr.io/chgl/hapi/hapi-fhir-jpaserver-starter:5.5.0-pre1-snapshot
+    image: docker.io/hapiproject/hapi:v5.5.0-distroless
     environment:
       HAPI_FHIR_VALIDATION_REQUESTS_ENABLED: "true"
       HAPI_FHIR_SUBSCRIPTION_RESTHOOK_ENABLED: "true"
@@ -11,7 +11,7 @@ services:
       - "8082:8080"
 
   list:
-    image: ghcr.io/miracum/recruit/list:v2.13.1
+    image: ghcr.io/miracum/recruit/list:v2.13.3
     ports:
       - "8083:8080"
     environment:
@@ -25,7 +25,7 @@ services:
       - "2080:80"
 
   loader:
-    image: curlimages/curl:7.78.0
+    image: curlimages/curl:7.79.1
     command: >
       -X POST
       -H "Content-Type: application/json"

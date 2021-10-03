@@ -31,7 +31,7 @@ services:
       - notify
 
   fhir:
-    image: ghcr.io/chgl/hapi/hapi-fhir-jpaserver-starter:5.5.0-pre1-snapshot
+    image: docker.io/hapiproject/hapi:v5.5.0-distroless
     environment:
       HAPI_FHIR_VALIDATION_REQUESTS_ENABLED: "true"
       HAPI_FHIR_SUBSCRIPTION_RESTHOOK_ENABLED: "true"

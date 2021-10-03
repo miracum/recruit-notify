@@ -38,7 +38,7 @@ push to miracum registry and sign:
   before_script:
     - echo $GHCR_REGISTRY_PASSWORD | docker login -u $GHCR_REGISTRY_USERNAME $CONTAINER_REGISTRY_HOST --password-stdin
     - echo $MIRACUM_REGISTRY_PASSWORD | docker login -u $MIRACUM_REGISTRY_USERNAME $MIRACUM_CONTAINER_REGISTRY --password-stdin
-    - wget https://github.com/sigstore/cosign/releases/download/v1.0.0/cosign-linux-amd64 -O /usr/local/bin/cosign && chmod +x /usr/local/bin/cosign
+    - wget https://github.com/sigstore/cosign/releases/download/v1.2.1/cosign-linux-amd64 -O /usr/local/bin/cosign && chmod +x /usr/local/bin/cosign
   after_script:
     - docker logout $CONTAINER_REGISTRY_HOST
     - docker logout $MIRACUM_CONTAINER_REGISTRY
