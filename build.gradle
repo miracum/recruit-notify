@@ -46,7 +46,7 @@ dependencies {
 
     implementation "io.jaegertracing:jaeger-client:1.6.0"
 
-    implementation "net.logstash.logback:logstash-logback-encoder:6.6"
+    implementation "net.logstash.logback:logstash-logback-encoder:7.0.1"
 
     implementation "io.opentracing.contrib:opentracing-spring-web-starter:4.1.0"
     implementation "io.opentracing.contrib:opentracing-spring-jaeger-web-starter:3.3.1"
