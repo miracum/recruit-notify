@@ -1,8 +1,4 @@
 notify:
-  version: 0.0.0-dev
-  retry:
-    backoffPeriodMs: 10000
-    maxAttempts: 10
   mailer:
     from: "noreply@example.com"
     link-template: "http://localhost:8083/recommendations/[list_id]"
@@ -41,11 +37,17 @@ notify:
           - email: "everyFiveMinutes@example.com"
             notify: "everyFiveMinutes"
 spring:
+  autoconfigure:
+    exclude: []
+  datasource:
+    url: "jdbc:postgresql://localhost:6432/recruit_notify_jobs?ApplicationName=recruit-notify"
+    username: "postgres"
+    password: "postgres" # pragma: allowlist secret
   mail:
     host: localhost
     port: 3025
     username: noreply@test.de
-    password: "" # pragma: allowlist secret
+    password: ""
     properties:
       mail:
         debug: false

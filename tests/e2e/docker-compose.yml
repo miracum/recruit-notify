@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   notify:
-    image: ghcr.io/miracum/recruit/notify:$IMAGE_TAG
+    image: ghcr.io/miracum/recruit/notify:${IMAGE_TAG:-latest}
     environment:
       FHIR_URL: "http://fhir:8080/fhir"
       WEBHOOK_ENDPOINT: "http://notify:8080/on-list-change"
@@ -10,14 +10,24 @@ services:
       SPRING_MAIL_PORT: 25
       SPRING_MAIL_USERNAME: maildev
       SPRING_MAIL_PASSWORD: maildev # pragma: allowlist secret
+      SPRING_PROFILES_ACTIVE: ha,prod
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres # pragma: allowlist secret
+      SPRING_DATASOURCE_URL: jdbc:postgresql://jobstore-db:5432/recruit_notify_jobs?ApplicationName=recruit-notify
     volumes:
       - ./rules.yaml:/opt/notify/config/application.yaml:ro
     depends_on:
       - fhir
       - maildev
 
+  jobstore-db:
+    image: docker.io/postgres:14.1
+    environment:
+      POSTGRES_PASSWORD: postgres # pragma: allowlist secret
+      POSTGRES_DB: recruit_notify_jobs
+
   tester:
-    image: curlimages/curl:7.77.0
+    image: docker.io/curlimages/curl:7.77.0
     command: >
       -X GET
       --fail
@@ -40,4 +50,4 @@ services:
       HAPI_FHIR_CORS_ALLOWED_ORIGIN: "*"
 
   maildev:
-    image: djfarrelly/maildev:1.1.0
+    image: docker.io/djfarrelly/maildev:1.1.0

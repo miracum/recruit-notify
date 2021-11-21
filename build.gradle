@@ -35,6 +35,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-actuator"
     implementation "org.springframework.boot:spring-boot-starter-aop"
     implementation "org.springframework.boot:spring-boot-starter-quartz"
+    implementation "org.springframework.boot:spring-boot-starter-jdbc"
     implementation "org.springframework.retry:spring-retry:1.3.1"
     implementation "io.micrometer:micrometer-registry-prometheus:1.8.0"
     implementation "io.micrometer:micrometer-core:1.8.0"
@@ -53,6 +54,8 @@ dependencies {
     implementation "io.opentracing.contrib:opentracing-spring-jaeger-cloud-starter:3.3.1"
     implementation "io.opentracing.contrib:opentracing-okhttp3:3.0.0"
 
+    runtimeOnly "org.postgresql:postgresql:42.3.1"
+
     developmentOnly "org.springframework.boot:spring-boot-devtools"
 
     testImplementation "org.springframework.boot:spring-boot-starter-test"
@@ -65,10 +68,6 @@ dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
     }
-}
-
-jacoco {
-    toolVersion = "0.8.6"
 }
 
 jacocoTestReport {
@@ -90,7 +89,7 @@ test {
 }
 
 checkstyle {
-    toolVersion "8.42"
+    toolVersion "8.45"
     configFile = file(".checkstyle/checkstyle.xml")
 }
 

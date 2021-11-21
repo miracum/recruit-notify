@@ -4,3 +4,4 @@
 !settings.gradle
 !.checkstyle
 !.spotbugs-exclude.xml
+!gradle.properties

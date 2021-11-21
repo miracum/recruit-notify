@@ -7,7 +7,7 @@ notify:
     from: "rekrutierungsvorschlag@miracum.org"
     link-template: "http://replace-host-name:8083/recommendations/[list_id]"
     subject: "MIRACUM Rekrutierungsunterstützung: neue Vorschläge für die Studie [study_acronym]"
-  rules:
+  rules: {}
 
 spring:
   application:
@@ -21,7 +21,12 @@ spring:
       mail:
         debug: false
   profiles:
-    active: dev
+    active: ha,dev
+  autoconfigure:
+    # a datasource is only required when running in HA mode, so disable any
+    # JDBC auto-configuration in the "normal" profile.
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 
 logging:
   pattern:
