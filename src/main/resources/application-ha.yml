@@ -18,7 +18,8 @@ spring:
             instanceId: AUTO
             instanceName: recruitNotifyScheduler
           jobStore:
-            class: org.quartz.impl.jdbcjobstore.JobStoreTX
+            # disabled due to: https://github.com/spring-projects/spring-boot/issues/28773
+            # class: org.quartz.impl.jdbcjobstore.JobStoreTX
             driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
             tablePrefix: QRTZ_
             isClustered: true

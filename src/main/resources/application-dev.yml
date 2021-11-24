@@ -37,8 +37,6 @@ notify:
           - email: "everyFiveMinutes@example.com"
             notify: "everyFiveMinutes"
 spring:
-  autoconfigure:
-    exclude: []
   datasource:
     url: "jdbc:postgresql://localhost:6432/recruit_notify_jobs?ApplicationName=recruit-notify"
     username: "postgres"
@@ -60,7 +58,6 @@ fhir:
 
 logging:
   level:
-    root: WARN
     org:
       miracum:
         recruit:
