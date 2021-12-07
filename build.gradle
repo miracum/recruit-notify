@@ -11,7 +11,8 @@ plugins {
 
 group = "org.miracum.recruit"
 version = "0.0.1-SNAPSHOT"
-sourceCompatibility = "11"
+sourceCompatibility = "17"
+targetCompatibility = "17"
 
 configurations {
     compileOnly {
