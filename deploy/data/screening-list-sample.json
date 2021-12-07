@@ -212,7 +212,7 @@
       },
       "request": {
         "method": "PUT",
-        "url": "List?identifier=http%3A%2F%2miracum.org%2Ffhir%2Fscreening-list-cohort-identifier|1"
+        "url": "List?identifier=http://miracum.org/fhir/screening-list-cohort-identifier|1"
       }
     },
     {
@@ -264,7 +264,7 @@
       },
       "request": {
         "method": "PUT",
-        "url": "List?identifier=http%3A%2F%2miracum.org%2Ffhir%2Fscreening-list-cohort-identifier|2"
+        "url": "List?identifier=http://miracum.org/fhir/screening-list-cohort-identifier|2"
       }
     },
     {

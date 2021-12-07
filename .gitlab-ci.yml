@@ -31,6 +31,13 @@ e2e:
     - docker-compose -p $CI_PROJECT_NAME-$CI_JOB_ID-e2e -f tests/e2e/docker-compose.yml logs
     - docker-compose -p $CI_PROJECT_NAME-$CI_JOB_ID-e2e -f tests/e2e/docker-compose.yml down --volumes --remove-orphans
 
+e2e_ha:
+  extends:
+    - e2e
+  before_script:
+    - export IMAGE_TAG=$CI_COMMIT_SHORT_SHA
+    - export SPRING_PROFILES_ACTIVE="ha,prod"
+
 push to miracum registry and sign:
   stage: release
   image: harbor.miracum.org/ci/docker:stable

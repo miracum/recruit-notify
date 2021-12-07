@@ -10,6 +10,14 @@ services:
     ports:
       - "8082:8080"
 
+  jobstore-db:
+    image: docker.io/postgres:14.1
+    environment:
+      POSTGRES_PASSWORD: postgres # pragma: allowlist secret
+      POSTGRES_DB: recruit_notify_jobs
+    ports:
+      - "6432:5432"
+
   list:
     image: ghcr.io/miracum/recruit/list:v2.14.2
     ports:
@@ -19,13 +27,13 @@ services:
       KEYCLOAK_DISABLED: "true"
 
   maildev:
-    image: djfarrelly/maildev:1.1.0
+    image: docker.io/djfarrelly/maildev:1.1.0
     ports:
       - "3025:25"
       - "2080:80"
 
   loader:
-    image: curlimages/curl:7.80.0
+    image: docker.io/curlimages/curl:7.80.0
     command: >
       -X POST
       -H "Content-Type: application/json"
@@ -42,7 +50,7 @@ services:
       - ./data:/data:ro
 
   jaeger:
-    image: jaegertracing/all-in-one:1.28
+    image: docker.io/jaegertracing/all-in-one:1.28
     ports:
       - 16686:16686
       - 6831:6831/udp

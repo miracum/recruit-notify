@@ -31,13 +31,27 @@ Visit <http://localhost:2080/> to see if the notifications have arrived:
 
 ![MailDev Screenshot](docs/img/maildev-screenshot.png "MailDev Screenshot")
 
+### Running E2E tests locally
+
+```shell
+# build a local version of the image
+docker build -t ghcr.io/miracum/recruit/notify:local-test .
+# run a basic smoke test
+IMAGE_TAG=local-test docker-compose -f tests/e2e/docker-compose.yml up --abort-on-container-exit
+# clean up
+docker-compose -f tests/e2e/docker-compose.yml down --volumes --remove-orphans
+```
+
+This runs a basic smoke test which attempts to ping the notify module's health
+endpoint (`/actuator/health`) for up to 120s or until it succeeds. See
+the [.gitlab-ci.yml](.gitlab-ci.yml)'s `e2e` job for details on how it is executed as part of the
+CI.
+
 ### Notes for running on Linux
 
 Replace the `webhook.endpoint` property of the notify module with the container host address,
 see <https://nickjanetakis.com/blog/docker-tip-65-get-your-docker-hosts-ip-address-from-in-a-container>
 .
-
-#### Explanation
 
 The notify module creates registered practitioners on startup in target FHIR server if not yet
 added.
