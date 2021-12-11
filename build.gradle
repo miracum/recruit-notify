@@ -65,6 +65,16 @@ dependencies {
     annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
 }
 
+// Mitigation for CVE-2021-44228
+// https://spring.io/blog/2021/12/10/log4j2-vulnerability-and-spring-boot
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == "org.apache.logging.log4j") {
+            details.useVersion "2.15.0"
+        }
+    }
+}
+
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
