@@ -43,9 +43,9 @@ public class PractitionerTransmitter {
 //            .setMethod(Bundle.HTTPVerb.POST);
 //      }
 //    }
-    
+
     fhirClient.executeSingleConditionalCreate(practitioners);
-    
+
     return null;
 
     //return fhirClient.executeTransaction(bundle);

@@ -213,7 +213,7 @@ public class FhirServerProvider {
       var contactPoint = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
       if (contactPoint.isPresent()) {
         var email = contactPoint.get().getValue();
-        
+
         try {
           fhirClient.create().resource(practitioner)
           .conditionalByUrl(String.format("Practitioner?email=%s", email)).execute();
@@ -221,7 +221,6 @@ public class FhirServerProvider {
           LOG.warn("adding practitioners will be skipped because filter by email caused problem",
               kv("practitioneremail", email));
         }
-        
       }
     }
   }
