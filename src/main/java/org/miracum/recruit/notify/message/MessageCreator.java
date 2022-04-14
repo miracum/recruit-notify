@@ -86,7 +86,7 @@ public class MessageCreator {
       return;
     }
 
-    //List<Subscription> configuredSubscriptions = config.getSubscriptionsByAcronym(acronym);
+    // List<Subscription> configuredSubscriptions = config.getSubscriptionsByAcronym(acronym);
     List<Subscription> filteredListByAcronymOrAsterisk = config.getSubscriptionsByAcronym(acronym);
 
     var practitionerListContainer =

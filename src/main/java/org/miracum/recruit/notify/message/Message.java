@@ -9,8 +9,8 @@ public class Message {
   String fhirMessageId;
   CommunicationRequest originalMessage;
 
-  public Message(Date authoredTimestamp, String fhirMessageId,
-      CommunicationRequest originalMessage) {
+  public Message(
+      Date authoredTimestamp, String fhirMessageId, CommunicationRequest originalMessage) {
     super();
     this.authoredTimestamp = authoredTimestamp;
     this.fhirMessageId = fhirMessageId;
@@ -28,7 +28,4 @@ public class Message {
   public CommunicationRequest getOriginalMessage() {
     return originalMessage;
   }
-
-
-
 }

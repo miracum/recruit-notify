@@ -30,7 +30,4 @@ public class TransformedMessages {
   public String getStudyName() {
     return studyName;
   }
-
-
-
 }

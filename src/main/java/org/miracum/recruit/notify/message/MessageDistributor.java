@@ -6,7 +6,6 @@ import static net.logstash.logback.argument.StructuredArguments.kv;
 import com.google.common.base.Strings;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -43,9 +42,13 @@ public class MessageDistributor {
 
   /** Prepare config items and email utils to distribute temporary stored messages. */
   @Autowired
-  public MessageDistributor(TemplateEngine emailTemplateEngine, JavaMailSender appJavaMailSender,
-      FhirServerProvider fhirServerProvider, UserConfig notificationRuleConfig,
-      MessageStatusUpdater messageUpdater, MailerConfig mailerConfig) {
+  public MessageDistributor(
+      TemplateEngine emailTemplateEngine,
+      JavaMailSender appJavaMailSender,
+      FhirServerProvider fhirServerProvider,
+      UserConfig notificationRuleConfig,
+      MessageStatusUpdater messageUpdater,
+      MailerConfig mailerConfig) {
     this.emailTemplateEngine = emailTemplateEngine;
     this.appJavaMailSender = appJavaMailSender;
     this.fhirServerProvider = fhirServerProvider;
@@ -57,8 +60,10 @@ public class MessageDistributor {
   public void distribute(String triggerKey) {
     LOG.info("begin distributing messages");
 
-    var subscriptions = notificationRuleConfig.getSubscriptions().stream()
-        .filter(rule -> triggerKey.equals(rule.getNotify())).collect(toList());
+    var subscriptions =
+        notificationRuleConfig.getSubscriptions().stream()
+            .filter(rule -> triggerKey.equals(rule.getNotify()))
+            .collect(toList());
 
     List<String> subscribers = new ArrayList<>();
     for (var item : subscriptions) {
@@ -84,8 +89,6 @@ public class MessageDistributor {
 
       sendMessageList(listFhirCommunicationRequests);
     }
-
-
   }
 
   private void sendMessageList(List<CommunicationRequest> openMessages) {
@@ -128,7 +131,8 @@ public class MessageDistributor {
 
         var emailAddress = queryEmailFromPractitioner(message);
         if (Strings.isNullOrEmpty(emailAddress)) {
-          LOG.error("adding {} to failed message list because no receiver email could be retrieved",
+          LOG.error(
+              "adding {} to failed message list because no receiver email could be retrieved",
               kv("message", message.getId()));
           messagesSentFailed.add(message.getIdElement().getIdPart());
           break;
@@ -136,8 +140,10 @@ public class MessageDistributor {
 
         mailInfo.setTo(emailAddress);
 
-        LOG.debug("sending scheduled notification mail {} {} with {}",
-            kv("from", mailInfo.getFrom()), kv("to", mailInfo.getTo()),
+        LOG.debug(
+            "sending scheduled notification mail {} {} with {}",
+            kv("from", mailInfo.getFrom()),
+            kv("to", mailInfo.getTo()),
             kv("subject", mailInfo.getSubject()));
 
         var mailSender = new MailSender(appJavaMailSender, emailTemplateEngine);
@@ -145,8 +151,11 @@ public class MessageDistributor {
           mailSender.sendMail(notifyInfo, mailInfo);
           messagesSentSuccessfully.add(message.getIdElement().getIdPart());
         } catch (MessagingException e) {
-          LOG.error("failed to send {} {}", kv("message", message.getId()),
-              kv("to", mailInfo.getTo()), e);
+          LOG.error(
+              "failed to send {} {}",
+              kv("message", message.getId()),
+              kv("to", mailInfo.getTo()),
+              e);
           messagesSentFailed.add(message.getIdElement().getIdPart());
         }
       } else {
@@ -156,7 +165,6 @@ public class MessageDistributor {
       counter++;
     }
 
-
     updateMessageStatus(messagesSentFailed, CommunicationRequestStatus.ONHOLD);
     updateMessageStatus(messagesSentSuccessfully, CommunicationRequestStatus.COMPLETED);
     updateMessageStatus(messagesIgnored, CommunicationRequestStatus.REVOKED);
@@ -165,19 +173,16 @@ public class MessageDistributor {
   private List<TransformedMessages> transformMessageListToIdentifyDuplicates(
       List<CommunicationRequest> openMessages) {
 
-
-
     List<TransformedMessages> messagesToSend =
         createListOfDistinctStudyRecipientPairs(openMessages);
 
     addMessagesToDistinctStudyRecipientPairs(openMessages, messagesToSend);
 
-
     return messagesToSend;
   }
 
-  private void addMessagesToDistinctStudyRecipientPairs(List<CommunicationRequest> openMessages,
-      List<TransformedMessages> messagesToSend) {
+  private void addMessagesToDistinctStudyRecipientPairs(
+      List<CommunicationRequest> openMessages, List<TransformedMessages> messagesToSend) {
     for (TransformedMessages transformedMessages : messagesToSend) {
 
       for (CommunicationRequest openMessage : openMessages) {
@@ -204,9 +209,11 @@ public class MessageDistributor {
       String recipient = openMessage.getRecipientFirstRep().getDisplay();
       TransformedMessages transformedMessage = new TransformedMessages(recipient, studyName);
 
-      List<TransformedMessages> searchResult = messagesToSend.stream()
-          .filter(m -> m.getStudyName().equals(studyName) && m.getEmailAddress().equals(recipient))
-          .collect(Collectors.toList());
+      List<TransformedMessages> searchResult =
+          messagesToSend.stream()
+              .filter(
+                  m -> m.getStudyName().equals(studyName) && m.getEmailAddress().equals(recipient))
+              .collect(Collectors.toList());
 
       if (searchResult.isEmpty()) {
         messagesToSend.add(transformedMessage);
@@ -238,8 +245,10 @@ public class MessageDistributor {
         var practitioner = (Practitioner) reference.getResource();
         var email = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
         if (email.isEmpty()) {
-          LOG.warn("{} could not be sent because of missing email address of {}",
-              kv("message", message.getId()), kv("practitioner", practitioner.getId()));
+          LOG.warn(
+              "{} could not be sent because of missing email address of {}",
+              kv("message", message.getId()),
+              kv("practitioner", practitioner.getId()));
         } else {
           return email.get().getValue();
         }

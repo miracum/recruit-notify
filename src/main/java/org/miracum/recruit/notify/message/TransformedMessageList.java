@@ -13,5 +13,4 @@ public class TransformedMessageList {
   public List<TransformedMessages> getTransformedMessages() {
     return transformedMessages;
   }
-
 }

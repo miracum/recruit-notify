@@ -4,7 +4,6 @@ import java.util.List;
 import org.hl7.fhir.r4.model.Bundle;
 import org.hl7.fhir.r4.model.Practitioner;
 import org.miracum.recruit.notify.FhirServerProvider;
-import org.miracum.recruit.notify.practitioner.PractitionerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,25 +28,25 @@ public class PractitionerTransmitter {
     var bundle = new Bundle();
     bundle.setType(Bundle.BundleType.TRANSACTION);
 
-//    for (var practitioner : practitioners) {
-//      var contactPoint = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
-//      if (contactPoint.isPresent()) {
-//        var email = contactPoint.get().getValue();
-//        bundle
-//            .addEntry()
-//            .setFullUrl(practitioner.getIdElement().getValue())
-//            .setResource(practitioner)
-//            .getRequest()
-//            .setUrl("Practitioner")
-//            .setIfNoneExist(String.format("email=%s", email))
-//            .setMethod(Bundle.HTTPVerb.POST);
-//      }
-//    }
+    //    for (var practitioner : practitioners) {
+    //      var contactPoint = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
+    //      if (contactPoint.isPresent()) {
+    //        var email = contactPoint.get().getValue();
+    //        bundle
+    //            .addEntry()
+    //            .setFullUrl(practitioner.getIdElement().getValue())
+    //            .setResource(practitioner)
+    //            .getRequest()
+    //            .setUrl("Practitioner")
+    //            .setIfNoneExist(String.format("email=%s", email))
+    //            .setMethod(Bundle.HTTPVerb.POST);
+    //      }
+    //    }
 
     fhirClient.executeSingleConditionalCreate(practitioners);
 
     return null;
 
-    //return fhirClient.executeTransaction(bundle);
+    // return fhirClient.executeTransaction(bundle);
   }
 }
