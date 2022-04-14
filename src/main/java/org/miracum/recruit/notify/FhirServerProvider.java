@@ -4,6 +4,7 @@ import static net.logstash.logback.argument.StructuredArguments.kv;
 import static org.hl7.fhir.instance.model.api.IBaseBundle.LINK_NEXT;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.server.exceptions.PreconditionFailedException;
 import ca.uhn.fhir.util.BundleUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,35 +53,25 @@ public class FhirServerProvider {
       return null;
     }
 
-    return fhirClient
-        .read()
-        .resource(ListResource.class)
+    return fhirClient.read().resource(ListResource.class)
         .withIdAndVersion(currentList.getIdElement().getIdPart(), Integer.toString(lastVersionId))
         .execute();
   }
 
   /** Query all research subjects from list. */
   public List<ResearchSubject> getResearchSubjectsFromList(ListResource list) {
-    var listBundle =
-        fhirClient
-            .search()
-            .forResource(ListResource.class)
-            .where(IAnyResource.RES_ID.exactly().identifier(list.getId()))
-            .include(IBaseResource.INCLUDE_ALL)
-            .returnBundle(Bundle.class)
-            .execute();
+    var listBundle = fhirClient.search().forResource(ListResource.class)
+        .where(IAnyResource.RES_ID.exactly().identifier(list.getId()))
+        .include(IBaseResource.INCLUDE_ALL).returnBundle(Bundle.class).execute();
 
-    var researchSubjectList =
-        new ArrayList<>(
-            BundleUtil.toListOfResourcesOfType(
-                fhirClient.getFhirContext(), listBundle, ResearchSubject.class));
+    var researchSubjectList = new ArrayList<>(BundleUtil
+        .toListOfResourcesOfType(fhirClient.getFhirContext(), listBundle, ResearchSubject.class));
 
     // Load the subsequent pages
     while (listBundle.getLink(LINK_NEXT) != null) {
       listBundle = fhirClient.loadPage().next(listBundle).execute();
-      researchSubjectList.addAll(
-          BundleUtil.toListOfResourcesOfType(
-              fhirClient.getFhirContext(), listBundle, ResearchSubject.class));
+      researchSubjectList.addAll(BundleUtil.toListOfResourcesOfType(fhirClient.getFhirContext(),
+          listBundle, ResearchSubject.class));
     }
 
     return researchSubjectList;
@@ -99,17 +90,12 @@ public class FhirServerProvider {
     for (var subscriberName : subscribers) {
       LOG.debug("fetching FHIR Practitioner {}", kv("subscriberName", subscriberName));
 
-      var listBundlePractitioners =
-          fhirClient
-              .search()
-              .forResource(Practitioner.class)
-              .where(Practitioner.EMAIL.exactly().code(subscriberName))
-              .returnBundle(Bundle.class)
-              .execute();
+      var listBundlePractitioners = fhirClient.search().forResource(Practitioner.class)
+          .where(Practitioner.EMAIL.exactly().code(subscriberName)).returnBundle(Bundle.class)
+          .execute();
 
-      var practitionerList =
-          BundleUtil.toListOfResourcesOfType(
-              fhirClient.getFhirContext(), listBundlePractitioners, Practitioner.class);
+      var practitionerList = BundleUtil.toListOfResourcesOfType(fhirClient.getFhirContext(),
+          listBundlePractitioners, Practitioner.class);
 
       if (practitionerList.isEmpty()) {
         LOG.warn("no Practitioner resource with {} found", kv("email", subscriberName));
@@ -117,8 +103,7 @@ public class FhirServerProvider {
       }
 
       if (practitionerList.size() > 1) {
-        LOG.warn(
-            "found more than one practitioner with {}. Returning the first one.",
+        LOG.warn("found more than one practitioner with {}. Returning the first one.",
             kv("email", subscriberName));
       }
 
@@ -133,7 +118,7 @@ public class FhirServerProvider {
    * addresses
    */
   // TODO: instead of N x M loops, only fetch the active communication requests for a given
-  //       subscriber.
+  // subscriber.
   public List<CommunicationRequest> getOpenMessagesForSubscribers(List<String> subscribers) {
     LOG.info("retrieving open messages for {}", kv("numSubscribers", subscribers.size()));
 
@@ -153,19 +138,15 @@ public class FhirServerProvider {
           if (reference.getResource().fhirType().equals("Practitioner")) {
             var practitioner = (Practitioner) reference.getResource();
 
-            LOG.debug(
-                "checking if {} matches with {} {} for {}",
-                kv("subscriber", subscriber),
+            LOG.debug("checking if {} matches with {} {} for {}", kv("subscriber", subscriber),
                 kv("communicationRequestReason", message.getReasonCodeFirstRep().getText()),
                 kv("practitionerEmail", practitioner.getTelecomFirstRep().getValue()),
                 kv("message", message.getIdElement().getIdPart()));
 
             if (PractitionerUtils.hasEmail(practitioner, subscriber)) {
-              LOG.debug(
-                  "add {} to list for {} ({})",
+              LOG.debug("add {} to list for {} ({})",
                   kv("practitioner", practitioner.getIdElement().getIdPart()),
-                  kv("message", message.getIdElement().getIdPart()),
-                  kv("subscriber", subscriber));
+                  kv("message", message.getIdElement().getIdPart()), kv("subscriber", subscriber));
               messages.add(message);
             }
           }
@@ -180,31 +161,24 @@ public class FhirServerProvider {
       CommunicationRequestStatus status) {
     LOG.info("retrieving CommunicationRequest with {} from server", kv("status", status));
 
-    var results =
-        fhirClient
-            .search()
-            .forResource(CommunicationRequest.class)
-            .where(CommunicationRequest.STATUS.exactly().code(status.toCode()))
-            .and(
-                CommunicationRequest.IDENTIFIER.hasSystemWithAnyCode(
-                    fhirSystemsConfig.getCommunication()))
-            .include(CommunicationRequest.INCLUDE_RECIPIENT.asNonRecursive())
-            .returnBundle(Bundle.class)
-            .execute();
+    var results = fhirClient.search().forResource(CommunicationRequest.class)
+        .where(CommunicationRequest.STATUS.exactly().code(status.toCode()))
+        .and(CommunicationRequest.IDENTIFIER
+            .hasSystemWithAnyCode(fhirSystemsConfig.getCommunication()))
+        .include(CommunicationRequest.INCLUDE_RECIPIENT.asNonRecursive()).returnBundle(Bundle.class)
+        .execute();
 
     var allMessages = new ArrayList<CommunicationRequest>();
 
     do {
       // cast all resources in the bundle to CommunicationRequest
-      var messagesInPageBundle =
-          BundleUtil.toListOfResourcesOfType(
-              fhirClient.getFhirContext(), results, CommunicationRequest.class);
+      var messagesInPageBundle = BundleUtil.toListOfResourcesOfType(fhirClient.getFhirContext(),
+          results, CommunicationRequest.class);
 
       allMessages.addAll(messagesInPageBundle);
 
       if (results.getLink(LINK_NEXT) != null) {
-        LOG.debug(
-            "fetching next page of results {} from server",
+        LOG.debug("fetching next page of results {} from server",
             kv("link", results.getLink(LINK_NEXT).getUrl()));
         var resultsFinal = results;
         results = fhirClient.loadPage().next(resultsFinal).execute();
@@ -232,5 +206,23 @@ public class FhirServerProvider {
 
   public Bundle executeTransaction(Bundle transaction) {
     return fhirClient.transaction().withBundle(transaction).execute();
+  }
+
+  public void executeSingleConditionalCreate(List<Practitioner> practitioners) {
+    for (Practitioner practitioner : practitioners) {
+      var contactPoint = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
+      if (contactPoint.isPresent()) {
+        var email = contactPoint.get().getValue();
+        
+        try {
+          fhirClient.create().resource(practitioner)
+          .conditionalByUrl(String.format("Practitioner?email=%s", email)).execute();
+        } catch (PreconditionFailedException e) {
+          LOG.warn("adding practitioners will be skipped because filter by email caused problem",
+              kv("practitioneremail", email));
+        }
+        
+      }
+    }
   }
 }

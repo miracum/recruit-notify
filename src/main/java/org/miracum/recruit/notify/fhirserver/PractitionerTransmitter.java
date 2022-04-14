@@ -29,21 +29,25 @@ public class PractitionerTransmitter {
     var bundle = new Bundle();
     bundle.setType(Bundle.BundleType.TRANSACTION);
 
-    for (var practitioner : practitioners) {
-      var contactPoint = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
-      if (contactPoint.isPresent()) {
-        var email = contactPoint.get().getValue();
-        bundle
-            .addEntry()
-            .setFullUrl(practitioner.getIdElement().getValue())
-            .setResource(practitioner)
-            .getRequest()
-            .setUrl("Practitioner")
-            .setIfNoneExist(String.format("email=%s", email))
-            .setMethod(Bundle.HTTPVerb.POST);
-      }
-    }
+//    for (var practitioner : practitioners) {
+//      var contactPoint = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
+//      if (contactPoint.isPresent()) {
+//        var email = contactPoint.get().getValue();
+//        bundle
+//            .addEntry()
+//            .setFullUrl(practitioner.getIdElement().getValue())
+//            .setResource(practitioner)
+//            .getRequest()
+//            .setUrl("Practitioner")
+//            .setIfNoneExist(String.format("email=%s", email))
+//            .setMethod(Bundle.HTTPVerb.POST);
+//      }
+//    }
+    
+    fhirClient.executeSingleConditionalCreate(practitioners);
+    
+    return null;
 
-    return fhirClient.executeTransaction(bundle);
+    //return fhirClient.executeTransaction(bundle);
   }
 }
