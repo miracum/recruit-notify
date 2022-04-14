@@ -24,6 +24,7 @@ import org.miracum.recruit.notify.fhirserver.FhirSystemsConfig;
 import org.miracum.recruit.notify.fhirserver.MessageTransmitter;
 import org.miracum.recruit.notify.mailconfig.MailerConfig;
 import org.miracum.recruit.notify.mailconfig.UserConfig;
+import org.miracum.recruit.notify.mailconfig.UserConfig.Subscription;
 import org.miracum.recruit.notify.mailsender.MailInfo;
 import org.miracum.recruit.notify.mailsender.MailSender;
 import org.miracum.recruit.notify.mailsender.NotifyInfo;
@@ -85,8 +86,11 @@ public class MessageCreator {
       return;
     }
 
+    //List<Subscription> configuredSubscriptions = config.getSubscriptionsByAcronym(acronym);
+    List<Subscription> filteredListByAcronymOrAsterisk = config.getSubscriptionsByAcronym(acronym);
+    
     var practitionerListContainer =
-        practitionerFilter.dividePractitioners(config.getSubscriptions(), practitionersFhir);
+        practitionerFilter.dividePractitioners(filteredListByAcronymOrAsterisk, practitionersFhir);
 
     List<CommunicationRequest> messagesAdHoc =
         createMessages(acronym, listId, practitionerListContainer.getAdHocRecipients());
