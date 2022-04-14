@@ -39,4 +39,11 @@ public class UserConfig {
     private String email;
     private String notify;
   }
+
+  public List<Subscription> getSubscriptionsByAcronym(String acronym) {
+    return this.getTrials().stream()
+        .filter(t -> t.acronym.equals(acronym) || t.acronym.equals("*"))
+        .flatMap(t -> t.getSubscriptions().stream())
+        .collect(Collectors.toUnmodifiableList());
+  }
 }

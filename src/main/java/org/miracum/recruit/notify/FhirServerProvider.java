@@ -4,6 +4,7 @@ import static net.logstash.logback.argument.StructuredArguments.kv;
 import static org.hl7.fhir.instance.model.api.IBaseBundle.LINK_NEXT;
 
 import ca.uhn.fhir.rest.client.api.IGenericClient;
+import ca.uhn.fhir.rest.server.exceptions.PreconditionFailedException;
 import ca.uhn.fhir.util.BundleUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -133,7 +134,7 @@ public class FhirServerProvider {
    * addresses
    */
   // TODO: instead of N x M loops, only fetch the active communication requests for a given
-  //       subscriber.
+  // subscriber.
   public List<CommunicationRequest> getOpenMessagesForSubscribers(List<String> subscribers) {
     LOG.info("retrieving open messages for {}", kv("numSubscribers", subscribers.size()));
 
@@ -232,5 +233,26 @@ public class FhirServerProvider {
 
   public Bundle executeTransaction(Bundle transaction) {
     return fhirClient.transaction().withBundle(transaction).execute();
+  }
+
+  public void executeSingleConditionalCreate(List<Practitioner> practitioners) {
+    for (Practitioner practitioner : practitioners) {
+      var contactPoint = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
+      if (contactPoint.isPresent()) {
+        var email = contactPoint.get().getValue();
+
+        try {
+          fhirClient
+              .create()
+              .resource(practitioner)
+              .conditionalByUrl(String.format("Practitioner?email=%s", email))
+              .execute();
+        } catch (PreconditionFailedException e) {
+          LOG.warn(
+              "adding practitioners will be skipped because filter by email caused problem",
+              kv("practitioneremail", email));
+        }
+      }
+    }
   }
 }

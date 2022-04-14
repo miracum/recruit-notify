@@ -1,5 +1,5 @@
 plugins {
-    id "org.springframework.boot" version "2.6.0"
+    id "org.springframework.boot" version "2.6.6"
     id "io.spring.dependency-management" version "1.0.11.RELEASE"
     id "com.github.spotbugs" version "5.0.3"
     id "java"
@@ -58,7 +58,7 @@ dependencies {
     implementation "io.opentracing.contrib:opentracing-spring-jaeger-cloud-starter:3.3.1"
     implementation "io.opentracing.contrib:opentracing-okhttp3:3.0.0"
 
-    runtimeOnly "org.postgresql:postgresql:42.3.1"
+    runtimeOnly "org.postgresql:postgresql:42.3.2"
 
     developmentOnly "org.springframework.boot:spring-boot-devtools"
 
