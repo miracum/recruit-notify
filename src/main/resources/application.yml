@@ -1,7 +1,7 @@
 notify:
   version: 0.0.0-dev
   retry:
-    backoffPeriodMs: 10000
+    backoffPeriodMs: 30000
     maxAttempts: 10
   mailer:
     from: "rekrutierungsvorschlag@miracum.org"
