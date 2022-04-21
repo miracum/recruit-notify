@@ -236,17 +236,28 @@ public class FhirServerProvider {
   }
 
   public void executeSingleConditionalCreate(List<Practitioner> practitioners) {
+
     for (Practitioner practitioner : practitioners) {
       var contactPoint = PractitionerUtils.getFirstEmailFromPractitioner(practitioner);
       if (contactPoint.isPresent()) {
         var email = contactPoint.get().getValue();
 
         try {
-          fhirClient
-              .create()
-              .resource(practitioner)
-              .conditionalByUrl(String.format("Practitioner?email=%s", email))
-              .execute();
+
+          Bundle bundle = new Bundle();
+          bundle.setType(Bundle.BundleType.TRANSACTION);
+
+          bundle
+              .addEntry()
+              .setFullUrl(practitioner.getIdElement().getValue())
+              .setResource(practitioner)
+              .getRequest()
+              .setUrl("Practitioner")
+              .setIfNoneExist(String.format("email=%s", email))
+              .setMethod(Bundle.HTTPVerb.POST);
+
+          executeTransaction(bundle);
+
         } catch (PreconditionFailedException e) {
           LOG.warn(
               "adding practitioners will be skipped because filter by email caused problem",
