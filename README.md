@@ -1,5 +1,10 @@
 # notify - The Notification Module
 
+## Introduction
+
+![Sequence-Diagram Notify-Module](docs/img/png/MiracumUc1RecruitNotifyDynamisch.png "Sequence-Diagram Notify-Module")
+
+
 ## Setup for Development
 
 Start a FHIR server (<http://localhost:8082/>), initialize it with sample data, and start the

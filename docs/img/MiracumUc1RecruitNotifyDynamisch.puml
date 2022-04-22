@@ -1,0 +1,55 @@
+@startuml NotificationModuleAblauf
+
+header NotificationModuleAblauf
+footer %date("dd.MM.yyyy")
+
+title Notification-Module Ablauf
+
+autonumber
+skinparam ResponseMessageBelowArrow true
+
+box "Notification Module" #LightSalmon
+entity Notify order 10
+entity Scheduler order 20
+end box
+
+box "FHIR Ressourcen" #APPLICATION
+collections Subscription order 30
+
+collections Practitioner order 40
+collections ResearchStudy order 41
+collections Patient order 42
+collections ResearchSubject order 43
+collections List order 44
+collections CommunicationRequest order 45
+end box
+
+entity Rekrutierungsinfrastruktur order 99
+
+entity Mailserver order 100
+
+Notify --> Subscription ++: erzeugt
+Notify --> Practitioner ++: erzeugt
+Rekrutierungsinfrastruktur --> ResearchStudy ++: legt an
+Rekrutierungsinfrastruktur --> Patient ++: legt an
+Rekrutierungsinfrastruktur --> ResearchSubject ++: legt an
+Rekrutierungsinfrastruktur --> List ++: legt an
+
+
+loop
+Rekrutierungsinfrastruktur --> List: **aktualisert**
+Subscription --> List : lauscht
+Subscription --> Notify: informiert über Update
+Notify --> CommunicationRequest: erzeugt
+end loop
+
+loop
+Scheduler --> Notify: triggert
+Notify --> CommunicationRequest: sucht für Studie und Practitioner relevante Notifications
+CommunicationRequest --> Notify: liefert Trefferliste
+Notify --> Mailserver: versendet E-Mails
+end loop
+
+
+
+@enduml
