@@ -1,6 +1,6 @@
 services:
   fhir:
-    image: docker.io/hapiproject/hapi:v5.6.0-distroless
+    image: docker.io/hapiproject/hapi:v6.0.1@sha256:63c98d8be3dadc77b47dca3115490f22bf99512f363f779f7bbcb42f569aeac3
     environment:
       HAPI_FHIR_VALIDATION_REQUESTS_ENABLED: "true"
       HAPI_FHIR_SUBSCRIPTION_RESTHOOK_ENABLED: "true"
@@ -11,7 +11,7 @@ services:
       - "8082:8080"
 
   jobstore-db:
-    image: docker.io/postgres:14.1
+    image: docker.io/library/postgres:14.5@sha256:f8816ada742348e1adfcec5c2a180b675bf6e4a294e0feb68bd70179451e1242
     environment:
       POSTGRES_PASSWORD: postgres # pragma: allowlist secret
       POSTGRES_DB: recruit_notify_jobs
@@ -19,7 +19,7 @@ services:
       - "6432:5432"
 
   list:
-    image: ghcr.io/miracum/recruit/list:v2.14.2
+    image: ghcr.io/miracum/recruit/list:v2.15.5@sha256:1d076650cbf2f364235e49203a98015d35443d72e74f462085ea3bcedd25cb4c
     ports:
       - "8083:8080"
     environment:
@@ -27,30 +27,22 @@ services:
       KEYCLOAK_DISABLED: "true"
 
   maildev:
-    image: docker.io/djfarrelly/maildev:1.1.0
+    image: docker.io/maildev/maildev:2.0.5@sha256:082ec5ee92266c6e17493998ff1bf1c3eb70604b159fbeeaa435ee777f5cc953
     ports:
-      - "3025:25"
-      - "2080:80"
+      - "3025:1025"
+      - "2080:1080"
 
   loader:
-    image: docker.io/curlimages/curl:7.80.0
+    image: docker.io/curlimages/curl:7.84.0@sha256:5a2a25d96aa941ea2fc47acc50122f7c3d007399a075df61a82d6d2c3a567a2b
     command: >
-      -X POST
-      -H "Content-Type: application/json"
-      --retry-connrefuse
-      --connect-timeout 10
-      --max-time 60
-      --retry 5
-      --retry-delay 10
-      --data "@/data/screening-list-sample.json"
-      http://fhir:8080/fhir
+      -X POST -H "Content-Type: application/json" --retry-connrefuse --connect-timeout 10 --max-time 60 --retry 5 --retry-delay 10 --data "@/data/screening-list-sample.json" http://fhir:8080/fhir
     depends_on:
       - fhir
     volumes:
       - ./data:/data:ro
 
   jaeger:
-    image: docker.io/jaegertracing/all-in-one:1.28
+    image: docker.io/jaegertracing/all-in-one:1.37@sha256:60ab2e6b0682f79a4e42b2bd2526ac4de80a3a7a1ef136c71dc0cb85e9c50f46
     ports:
       - 16686:16686
       - 6831:6831/udp

@@ -4,7 +4,9 @@
     "config:base",
     "group:allNonMajor",
     "schedule:weekly",
-    ":disableDependencyDashboard"
+    ":disableDependencyDashboard",
+    "docker:pinDigests"
   ],
-  "assigneesFromCodeOwners": true
+  "assigneesFromCodeOwners": true,
+  "ignorePaths": []
 }
